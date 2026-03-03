@@ -1,7 +1,6 @@
 ---
 name: commit-code
 description: This skill should be used when the user asks to "commit", "commit changes", "create a commit", "stage and commit", "git commit", or wants to save their work to version control. Guides Claude through staging files and writing a well-formed git commit message.
-version: 1.0.0
 ---
 
 # Commit Code
