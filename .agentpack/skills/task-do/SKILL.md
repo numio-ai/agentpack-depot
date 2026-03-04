@@ -11,7 +11,7 @@ Invoke with: `/task-do $ARGUMENTS[0]`
 Example: `/task-do @tasks/backlog/20260118_add_persistent_ebs_volumes.md`
 
 ## Task
-Work on the specified task file following the task management standard in `@docs/task-management.md`.
+Work on the specified task file following the task management standard in `@.agentpack/rules/task-management.md`.
 
 ## Execution Steps
 
