@@ -1,16 +1,16 @@
 ---
 name: plan
-description: Planning stage — produce implementation plan and task files in tasks/backlog/. Invoke with /gl:plan after architecture exists.
+description: Planning stage — produce implementation plan and task files in tasks/backlog/. Invoke with /stc:plan after architecture exists.
 ---
 
-# Plan (`/gl:plan`)
+# Plan (`/stc:plan`)
 
 ## Preconditions
 **Required before starting:**
 - `docs/vision.md`, `docs/spec.md`, `docs/requirements.md`
 - `docs/architecture.md`
 
-If architecture is missing, stop: *Cannot run `/gl:plan` — `docs/architecture.md` not found. Run `/gl:design` first.*
+If architecture is missing, stop: *Cannot run `/stc:plan` — `docs/architecture.md` not found. Run `/stc:design` first.*
 
 ## Outputs
 | Artifact | Path |
@@ -22,7 +22,7 @@ Each task file MUST follow the task management standard (YAML `status`, problem,
 
 ## Usage
 ```
-/gl:plan
+/stc:plan
 ```
 
 ## Workflow
@@ -41,4 +41,4 @@ Each task file MUST follow the task management standard (YAML `status`, problem,
 
 ## Discipline
 - Task naming: `YYYYMMDD[_NN]_<description>.md` (lowercase, underscores).
-- Do not mark tasks `active` or `done` here; that happens under `/gl:implement-task`.
+- Do not mark tasks `active` or `done` here; that happens under `/stc:implement-task`.

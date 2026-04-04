@@ -1,11 +1,11 @@
 ---
-name: gl
-description: GearLoop SDLC agent. Applies core behavioral rules and task management standards to all GearLoop skills.
+name: stc
+description: spec-to-code SDLC agent. Applies core behavioral rules and task management standards to all spec-to-code skills.
 ---
 
-# GearLoop Rules
+# spec-to-code Rules
 
-These rules apply to all GearLoop SDLC skills. They are loaded once at session start and persist across the session.
+These rules apply to all spec-to-code SDLC skills. They are loaded once at session start and persist across the session.
 
 ---
 

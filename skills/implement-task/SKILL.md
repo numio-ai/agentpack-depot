@@ -1,14 +1,14 @@
 ---
 name: implement-task
-description: Execute a single task — detailed design, implementation, tests. Invoke with /gl:implement-task and a task file path. For planned work, defects, and ad-hoc tasks.
+description: Execute a single task — detailed design, implementation, tests. Invoke with /stc:implement-task and a task file path. For planned work, defects, and ad-hoc tasks.
 ---
 
-# Implement Task (`/gl:implement-task`)
+# Implement Task (`/stc:implement-task`)
 
 ## Usage
 ```
-/gl:implement-task @tasks/backlog/20260210_add_feature.md
-/gl:implement-task $ARGUMENTS[0]
+/stc:implement-task @tasks/backlog/20260210_add_feature.md
+/stc:implement-task $ARGUMENTS[0]
 ```
 
 ## Preconditions
@@ -38,4 +38,4 @@ description: Execute a single task — detailed design, implementation, tests. I
 5. **Documentation** — If behavior or intent in docs is wrong or incomplete, update the relevant `docs/*` files and say what changed (dependency order: vision → spec → requirements → architecture → implementation plan → tasks).
 
 ## After single-task flows (bugfix / ad-hoc)
-When the user expects integration coverage, run **`/gl:qa-integration-test`** for the affected scope before hand-off. Full regression uses **`/gl:qa-system-test`**.
+When the user expects integration coverage, run **`/stc:qa-integration-test`** for the affected scope before hand-off. Full regression uses **`/stc:qa-system-test`**.

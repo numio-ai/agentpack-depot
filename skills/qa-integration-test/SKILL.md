@@ -1,9 +1,9 @@
 ---
 name: qa-integration-test
-description: Integration testing — verify new work works with the running app and prior phases/regressions. Invoke after a phase or after ad-hoc /gl:implement-task when integration coverage is needed.
+description: Integration testing — verify new work works with the running app and prior phases/regressions. Invoke after a phase or after ad-hoc /stc:implement-task when integration coverage is needed.
 ---
 
-# QA Integration Test (`/gl:qa-integration-test`)
+# QA Integration Test (`/stc:qa-integration-test`)
 
 ## Purpose
 Validate that:
@@ -24,7 +24,7 @@ Write an **integration test report** (markdown — `docs/` or user-chosen path),
 
 ## Usage
 ```
-/gl:qa-integration-test
+/stc:qa-integration-test
 ```
 Optionally scope in the user message: *"phase 2 only"*, *"after defect TASK-xxx"*, etc.
 
@@ -36,7 +36,7 @@ Optionally scope in the user message: *"phase 2 only"*, *"after defect TASK-xxx"
 
 3. Focus on **interfaces between components** and **realistic user paths** for this slice of work.
 
-4. Do not claim release readiness — that is **`/gl:qa-system-test`**.
+4. Do not claim release readiness — that is **`/stc:qa-system-test`**.
 
 ## Discipline
 - Fix failures you can within scope; escalate product decisions.

@@ -1,12 +1,12 @@
 ---
 name: init
-description: Load GearLoop rules into the current session. Run this once at session start if you are not using the gl agent. Rules persist until context compaction.
+description: Load spec-to-code rules into the current session. Run this once at session start if you are not using the stc agent. Rules persist until context compaction.
 disable-model-invocation: true
 ---
 
-# GearLoop Rules
+# spec-to-code Rules
 
-The following rules govern all GearLoop SDLC skills. They are loaded into your session context now.
+The following rules govern all spec-to-code SDLC skills. They are loaded into your session context now.
 
 ---
 
@@ -20,4 +20,4 @@ The following rules govern all GearLoop SDLC skills. They are loaded into your s
 
 ---
 
-Rules loaded. You can now use any `/gl:*` skill with these rules active. If the session compacts, run `/gl:init` again.
+Rules loaded. You can now use any `/stc:*` skill with these rules active. If the session compacts, run `/stc:init` again.

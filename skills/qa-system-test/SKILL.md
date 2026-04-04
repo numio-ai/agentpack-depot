@@ -1,9 +1,9 @@
 ---
 name: qa-system-test
-description: Full system test — codebase review against specs, full test suite, e2e flows, severity report. Invoke with /gl:qa-system-test before release.
+description: Full system test — codebase review against specs, full test suite, e2e flows, severity report. Invoke with /stc:qa-system-test before release.
 ---
 
-# QA System Test (`/gl:qa-system-test`)
+# QA System Test (`/stc:qa-system-test`)
 
 ## Preconditions
 - `docs/spec.md` and `docs/requirements.md` (or equivalent product docs) exist.
@@ -26,7 +26,7 @@ System test report including:
 
 ## Usage
 ```
-/gl:qa-system-test
+/stc:qa-system-test
 ```
 
 ## Workflow

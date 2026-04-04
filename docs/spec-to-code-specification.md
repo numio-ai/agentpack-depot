@@ -1,14 +1,14 @@
-# GearLoop: Vision, Specification and Requirements
+# spec-to-code: Vision, Specification and Requirements
 
 ## Vision
 
 
-### GearLoop goals:
+### spec-to-code goals:
 - Provide a framework and mechanisms  for accelerated software development using AI coding tools (Claude Code)
 - Establish AI-assisted SDLC, where repeatable steps in lifecycle are automated or assisted using AI agents. Therefore overall speed of delivery is accelerated. 
-- Stretch goal - establishe feedback loop for incremental improvements of GearLoop artifacts (skills, rules, agents, hooks, tools/MCPs) - the more users use it, the better it serves their projects
+- Stretch goal - establishe feedback loop for incremental improvements of spec-to-code artifacts (skills, rules, agents, hooks, tools/MCPs) - the more users use it, the better it serves their projects
 
-### SDLC to implement in GearLoop
+### SDLC to implement in spec-to-code
 
 #### New product  development
     
@@ -31,7 +31,7 @@
                 - is our spec really solves business problem? is there a better way to solve business problem?  
                 - do we have a sound business case for monetization?
                 - what are possible risks, and did we address them? 
-            - Functional validation: Are produced documents define functionality consistently, and do they provide full details required for design and implementation of the product?
+            - Functional validation: Are produced documents define-product functionality consistently, and do they provide full details required for design and implementation of the product?
                 - Is outputted functionality in a way that is easy to understand and follow?
                 - Are there any gaps in functionality?
                 - Are there any ambiguities in functionality?
@@ -134,7 +134,7 @@ Maintenance covers ongoing work on an existing product that does not introduce n
 The user identifies a specific maintenance need — such as refactoring a module, migrating a database, upgrading a dependency, or improving test coverage — and initiates it through the standard task workflow.
 
 - **How it is done**:
-    - The user creates a task in `tasks/backlog/` using the `task-define` skill, with a clear problem statement, scope, and acceptance criteria. The task type should reflect the nature of the work (e.g. `refactor`, `upgrade`, `chore`).
+    - The user creates a task in `tasks/backlog/` using the `create-task` skill, with a clear problem statement, scope, and acceptance criteria. The task type should reflect the nature of the work (e.g. `task`, `bug`, `refactor`, `upgrade`, `chore`).
     - The agent picks up the task using the `implement-task` skill and executes it following the same Implementation process as in new product development: detailed design first, then code, then unit tests.
     - Architecture impact check: if the task requires architectural changes, the agent must flag this and enter an interactive discussion with the user before proceeding.
     - Integration and regression tests are run after the task is complete to confirm nothing is broken. See the Integration test and System test steps in the Bug fixes workflow for reference — the same process applies here.
@@ -182,15 +182,15 @@ Adding incremental features to an existing product follows the same overall work
 
 ## Current State
 
-GearLoop is packaged as a **Claude Code plugin** (name: `gl`). Users install it from GitHub and invoke skills via `/gl:<skill>`.
+spec-to-code is packaged as a **Claude Code plugin** (name: `stc`). Users install it from GitHub and invoke skills via `/stc:<skill>`.
 
 The plugin ships:
-- **`gl` agent** — default agent whose system prompt contains the behavioral rules (first-principles, task-management standard). Activated via `settings.json`. Rules load once at session start and survive compaction.
-- **13 skills** covering the full SDLC: `/gl:init` (manual rule loader), `/gl:define`, `/gl:design`, `/gl:plan`, `/gl:implement-task`, `/gl:implement-phase`, `/gl:implement-all`, `/gl:qa-integration-test`, `/gl:qa-system-test`, `/gl:task-define`, `/gl:codebase-review`, `/gl:comment-code`, `/gl:commit-code`.
-- **Canonical rules** in `rules/first-principles.md` and `rules/task-management.md` — single source of truth used by both the agent and `/gl:init`.
+- **`stc` agent** — default agent whose system prompt contains the behavioral rules (first-principles, task-management standard). Activated via `settings.json`. Rules load once at session start and survive compaction.
+- **13 skills** covering the full SDLC: `/stc:init` (manual rule loader), `/stc:define-product`, `/stc:design`, `/stc:plan`, `/stc:implement-task`, `/stc:implement-phase`, `/stc:implement-plan`, `/stc:qa-integration-test`, `/stc:qa-system-test`, `/stc:create-task`, `/stc:codebase-review`, `/stc:comment-code`, `/stc:commit-code`.
+- **Canonical rules** in `rules/first-principles.md` and `rules/task-management.md` — single source of truth used by both the agent and `/stc:init`.
 - **Artifacts:** `tasks/` directory (backlog / active / done), `docs/*` specs, designs, architecture, plans.
 
-What works: a developer runs `/gl:implement-task` on a well-defined task file and the agent implements and unit-tests it with minimal intervention. When tasks are unambiguous, agent output quality is high.
+What works: a developer runs `/stc:implement-task` on a well-defined task file and the agent implements and unit-tests it with minimal intervention. When tasks are unambiguous, agent output quality is high.
 
 
 ## What is needed next
@@ -203,13 +203,13 @@ Stretch: parallel task execution via agents, feedback loop for skill improvement
 
 ## Workflows: User Experience
 
-GearLoop supports four workflows. Each is a sequence of stages driven by skill invocations. At every stage the user invokes a skill, the agent executes it collaboratively, and the user approves the output before moving forward.
+spec-to-code supports four workflows. Each is a sequence of stages driven by skill invocations. At every stage the user invokes a skill, the agent executes it collaboratively, and the user approves the output before moving forward.
 
 ### New Product Development
 
 Starting point: the user has an idea for a new product and no existing documents.
 
-**Definition** — `/gl:define`
+**Definition** — `/stc:define-product`
 
 The agent guides the user through producing three documents:
 
@@ -225,7 +225,7 @@ After all three documents are drafted, the agent validates them against two rubr
 
 The agent produces a validation report. The user addresses findings. The cycle repeats until all critical issues are resolved or the user approves moving forward.
 
-**Architecture** — `/gl:design`
+**Architecture** — `/stc:design`
 
 The agent drafts a high-level architecture document (`docs/architecture.md`) covering: technology choices, system architecture, domain dictionary (key terms only), workflows and key APIs, security mechanisms. Detailed design (API signatures, schemas) is explicitly out of scope — that happens during implementation.
 
@@ -235,7 +235,7 @@ Review cycle:
 3. Agent checks whether specs or requirements need updates based on architectural decisions (e.g., a feature deferred due to cost). Updates all documents to stay consistent.
 4. User gives final approval.
 
-**Planning** — `/gl:plan`
+**Planning** — `/stc:plan`
 
 The agent produces an implementation plan (`docs/implementation-plan.md`): a DAG of tasks grouped into phases. Each task becomes a file in `tasks/backlog/` following the task management standard.
 
@@ -246,15 +246,15 @@ Review cycle:
 4. User approves.
 
 **Implementation** — one of:
-- `/gl:implement-task <task>` — single task
-- `/gl:implement-phase <N>` — all tasks in a phase
-- `/gl:implement-all` — full plan
+- `/stc:implement-task <task>` — single task
+- `/stc:implement-phase <N>` — all tasks in a phase
+- `/stc:implement-plan` — full plan
 
 Per task, the agent: (1) produces detailed design, (2) implements, (3) writes and runs tests. Blockers and ambiguities are surfaced to the user.
 
-At the end of each phase, the agent runs integration tests (`/gl:qa-integration-test`): new functionality works and prior phases are not broken. User reviews before the next phase begins. Documents are updated if implementation reveals necessary changes.
+At the end of each phase, the agent runs integration tests (`/stc:qa-integration-test`): new functionality works and prior phases are not broken. User reviews before the next phase begins. Documents are updated if implementation reveals necessary changes.
 
-**QA** — `/gl:qa-system-test`
+**QA** — `/stc:qa-system-test`
 
 The agent reviews the full codebase against specs, runs the test suite, adds missing tests for critical paths, validates end-to-end flows. Produces a system test report (critical/major/minor). Fixes what it can; escalates the rest. Re-tests until all critical and major issues are cleared. User approves.
 
@@ -264,13 +264,13 @@ The agent reviews the full codebase against specs, runs the test suite, adds mis
 
 Precondition: existing product with documents in `docs/`.
 
-1. User creates a defect task: `/gl:task-define` with type `defect` — provides observed problem, expected result, actual result, reproduction steps.
-2. User runs `/gl:implement-task <defect-task>`.
+1. User creates a bug ticket: `/stc:create-task bug` — provides observed problem, expected result, actual result, reproduction steps.
+2. User runs `/stc:implement-task <defect-task>`.
 3. Agent investigates root cause. Produces root cause analysis and fix plan.
 4. **Architecture gate**: if the fix requires architectural changes, the agent stops and discusses with the user before proceeding.
 5. Agent implements: detailed design → code → tests.
-6. Agent runs integration test (`/gl:qa-integration-test`) — defect resolved + related functionality intact.
-7. Agent runs system test (`/gl:qa-system-test`) — full regression. Produces report.
+6. Agent runs integration test (`/stc:qa-integration-test`) — defect resolved + related functionality intact.
+7. Agent runs system test (`/stc:qa-system-test`) — full regression. Produces report.
 8. User approves.
 
 ---
@@ -281,19 +281,19 @@ Precondition: existing product with documents in `docs/`.
 
 **Ad-hoc task:**
 
-1. User creates a task: `/gl:task-define` (type: `refactor`, `upgrade`, `chore`, etc.).
-2. User runs `/gl:implement-task <task>`.
+1. User creates a task: `/stc:create-task task` (type: `refactor`, `upgrade`, `chore`, etc.).
+2. User runs `/stc:implement-task <task>`.
 3. Same execution flow as a single implementation task. Architecture gate applies.
-4. Integration test (`/gl:qa-integration-test`) + regression tests. User approves.
+4. Integration test (`/stc:qa-integration-test`) + regression tests. User approves.
 
 **Codebase optimization:**
 
-1. User invokes `/gl:codebase-review`.
+1. User invokes `/stc:codebase-review`.
 2. Agent audits the full codebase. Produces a report: technical debt, fragmentation, inconsistency, duplication, performance issues.
 3. User reviews and prioritizes findings.
 4. If structural changes are needed: agent updates architecture doc, user approves.
 5. Agent produces implementation plan (phases, tasks, DAG), user approves.
-6. Execution follows the standard Implementation → `/gl:qa-integration-test` → `/gl:qa-system-test` flow.
+6. Execution follows the standard Implementation → `/stc:qa-integration-test` → `/stc:qa-system-test` flow.
 
 ---
 
@@ -303,9 +303,9 @@ Precondition: existing product with documents in `docs/`.
 
 Same stages as new product development, but the agent operates on existing documents:
 
-1. `/gl:define` — Agent drafts additions/amendments to existing vision, spec, requirements. After this stage, the existing docs describe the product including the new feature — no separate "feature docs."
-2. `/gl:design` — Agent assesses whether architecture changes are needed. If none needed, this is lightweight — agent documents the assessment and moves on.
-3. `/gl:plan` — Scoped to the new feature but accounts for dependencies on existing code.
+1. `/stc:define-product` — Agent drafts additions/amendments to existing vision, spec, requirements. After this stage, the existing docs describe the product including the new feature — no separate "feature docs."
+2. `/stc:design` — Agent assesses whether architecture changes are needed. If none needed, this is lightweight — agent documents the assessment and moves on.
+3. `/stc:plan` — Scoped to the new feature but accounts for dependencies on existing code.
 4. Implementation, QA — same as new product development.
 
 ---
@@ -316,28 +316,28 @@ Derived from the workflows above. Everything below exists to support the user ex
 
 ### Skills
 
-GearLoop is a Claude Code plugin named `gl`. All skills are namespaced as `/gl:<skill>`.
+spec-to-code is a Claude Code plugin named `stc`. All skills are namespaced as `/stc:<skill>`.
 
 | Skill | Invocation | Drives | Input | Output |
 |-------|-----------|--------|-------|--------|
-| `init` | `/gl:init` | Rule loading (manual fallback) | None | Rules injected into session context |
-| `define` | `/gl:define` | Definition stage | User input, reference materials | `docs/vision.md`, `docs/spec.md`, `docs/requirements.md` |
-| `design` | `/gl:design` | Architecture stage | Docs from Definition | `docs/architecture.md` |
-| `plan` | `/gl:plan` | Planning stage | Docs from Definition + Architecture | `docs/implementation-plan.md`, task files in `tasks/backlog/` |
-| `implement-task` | `/gl:implement-task <task>` | Single task execution | Task file | Code changes, test results |
-| `implement-phase` | `/gl:implement-phase <N>` | Phase execution | Implementation plan, task files | Working code, test results |
-| `implement-all` | `/gl:implement-all` | Full plan execution | Implementation plan, task files | Working code, test results |
-| `qa-integration-test` | `/gl:qa-integration-test` | Integration testing | Codebase, specs, phase scope | Integration test report |
-| `qa-system-test` | `/gl:qa-system-test` | System testing | Full codebase, all docs | System test report |
-| `task-define` | `/gl:task-define` | Task creation | User input | Task file in `tasks/backlog/` |
-| `codebase-review` | `/gl:codebase-review` | Codebase audit | Full codebase | Audit report |
-| `commit-code` | `/gl:commit-code` | Version control | Staged changes | Git commit |
-| `comment-code` | `/gl:comment-code` | Code commenting | Source files | Commented source files |
+| `init` | `/stc:init` | Rule loading (manual fallback) | None | Rules injected into session context |
+| `define-product` | `/stc:define-product` | Definition stage | User input, reference materials | `docs/vision.md`, `docs/spec.md`, `docs/requirements.md` |
+| `design` | `/stc:design` | Architecture stage | Docs from Definition | `docs/architecture.md` |
+| `plan` | `/stc:plan` | Planning stage | Docs from Definition + Architecture | `docs/implementation-plan.md`, task files in `tasks/backlog/` |
+| `implement-task` | `/stc:implement-task <task>` | Single task execution | Task file | Code changes, test results |
+| `implement-phase` | `/stc:implement-phase <N>` | Phase execution | Implementation plan, task files | Working code, test results |
+| `implement-plan` | `/stc:implement-plan` | Full plan execution | Implementation plan, task files | Working code, test results |
+| `qa-integration-test` | `/stc:qa-integration-test` | Integration testing | Codebase, specs, phase scope | Integration test report |
+| `qa-system-test` | `/stc:qa-system-test` | System testing | Full codebase, all docs | System test report |
+| `create-task` | `/stc:create-task` | Task / bug ticket creation | User input (optional: `task` or `bug`) | Task file in `tasks/backlog/` |
+| `codebase-review` | `/stc:codebase-review` | Codebase audit | Full codebase | Audit report |
+| `commit-code` | `/stc:commit-code` | Version control | Staged changes | Git commit |
+| `comment-code` | `/stc:comment-code` | Code commenting | Source files | Commented source files |
 
 #### Skill behavior contract
 
 Every skill that drives a workflow stage must:
-1. **Validate preconditions** before starting. `/gl:design` requires definition docs to exist. `/gl:plan` requires architecture doc. `/gl:implement-phase` and `/gl:implement-all` require an approved plan. `/gl:qa-system-test` requires a completed implementation. If preconditions are not met, the skill tells the user what is missing.
+1. **Validate preconditions** before starting. `/stc:design` requires definition docs to exist. `/stc:plan` requires architecture doc. `/stc:implement-phase` and `/stc:implement-plan` require an approved plan. `/stc:qa-system-test` requires a completed implementation. If preconditions are not met, the skill tells the user what is missing.
 2. **Produce artifacts** as specified in the output column.
 3. **Run a validation cycle** after producing artifacts: self-review against rubrics, produce a report, address findings with user input.
 4. **Maintain document consistency**: if one document changes, dependent documents are reviewed and updated. The dependency chain is: vision → spec → requirements → architecture → implementation plan → tasks. Changes flow forward; upstream documents are updated only when downstream work reveals the need.
@@ -345,21 +345,21 @@ Every skill that drives a workflow stage must:
 
 ### Behavioral Guardrails
 
-Plugins don't support auto-loaded `.claude/rules/`. GearLoop uses two mechanisms to load rules into the session:
+Plugins don't support auto-loaded `.claude/rules/`. spec-to-code uses two mechanisms to load rules into the session:
 
-1. **`gl` agent (recommended)** — The plugin ships a default agent (`agents/gl.md`) activated via `settings.json`. Its system prompt contains both rule sets. Rules load once at session start and survive context compaction.
-2. **`/gl:init` skill (fallback)** — Manually injects rules via `!cat ${CLAUDE_SKILL_DIR}/../../rules/...`. For users who can't use the agent (e.g., conflict with another plugin). Does not survive compaction.
+1. **`stc` agent (recommended)** — The plugin ships a default agent (`agents/stc.md`) activated via `settings.json`. Its system prompt contains both rule sets. Rules load once at session start and survive context compaction.
+2. **`/stc:init` skill (fallback)** — Manually injects rules via `!cat ${CLAUDE_SKILL_DIR}/../../rules/...`. For users who can't use the agent (e.g., conflict with another plugin). Does not survive compaction.
 
 | Guardrail | Content | Source |
 |-----------|---------|--------|
 | Core Principles | YAGNI, KISS, DRY, single-task focus, clarify ambiguity, step-by-step approval, root-cause troubleshooting | `rules/first-principles.md` |
 | Task Management Standard | Task lifecycle (backlog → active → done), file structure, naming, approval model | `rules/task-management.md` |
 
-Skills themselves contain only workflow instructions — no inlined rules. They rely on the rules being present in the session via the agent or `/gl:init`.
+Skills themselves contain only workflow instructions — no inlined rules. They rely on the rules being present in the session via the agent or `/stc:init`.
 
 ### User's Project Structure
 
-GearLoop skills create the following layout in the user's project as they progress through SDLC stages:
+spec-to-code skills create the following layout in the user's project as they progress through SDLC stages:
 
 ```
 user-project/
@@ -375,7 +375,7 @@ user-project/
 │   └── done/
 ```
 
-The `/gl:define` skill creates the `docs/` directory and initial documents if they don't exist. The `/gl:plan` skill creates task files in `tasks/backlog/`. The project structure is created incrementally as the user progresses through stages — no upfront scaffolding required.
+The `/stc:define-product` skill creates the `docs/` directory and initial documents if they don't exist. The `/stc:plan` skill creates task files in `tasks/backlog/`. The project structure is created incrementally as the user progresses through stages — no upfront scaffolding required.
 
 ### Workflow State
 
@@ -401,7 +401,7 @@ When any document changes, the skill that made the change must check dependent d
 
 ### Precondition Enforcement
 
-Every skill validates its preconditions before starting work. Missing preconditions produce a clear message ("Cannot run `/gl:design` — definition documents not found. Run `/gl:define` first."). No skill silently proceeds with incomplete inputs.
+Every skill validates its preconditions before starting work. Missing preconditions produce a clear message ("Cannot run `/stc:design` — definition documents not found. Run `/stc:define-product` first."). No skill silently proceeds with incomplete inputs.
 
 ### User Approval Gates
 
@@ -413,7 +413,7 @@ Any change that touches the high-level architecture — whether discovered durin
 
 ### Task DAG Execution
 
-When executing multiple tasks (`/gl:implement-phase` or `/gl:implement-all`), the agent respects phase boundaries and DAG dependencies. In v1, tasks run sequentially within a phase; parallel execution is deferred to a future version. Integration tests (`/gl:qa-integration-test`) run at phase boundaries. The user can interrupt execution at any phase boundary.
+When executing multiple tasks (`/stc:implement-phase` or `/stc:implement-plan`), the agent respects phase boundaries and DAG dependencies. In v1, tasks run sequentially within a phase; parallel execution is deferred to a future version. Integration tests (`/stc:qa-integration-test`) run at phase boundaries. The user can interrupt execution at any phase boundary.
 
 ### Validation Rubrics
 
@@ -440,21 +440,21 @@ During implementation, the agent does not modify functionality outside the scope
 
 Cross-reference confirming that every workflow step maps to a plugin component.
 
-| Workflow Step | Skill (`/gl:*`) | Artifacts Produced | Guardrails (via agent) |
+| Workflow Step | Skill (`/stc:*`) | Artifacts Produced | Guardrails (via agent) |
 |--------------|----------------|--------------------|-----------------------|
-| New product → Definition | `define` | vision, spec, requirements | core principles |
+| New product → Definition | `define-product` | vision, spec, requirements | core principles |
 | New product → Architecture | `design` | architecture | core principles |
 | New product → Planning | `plan` | implementation-plan, task files | core principles, task-management |
-| New product → Implementation | `implement-task`, `implement-phase`, `implement-all` | code, tests | core principles, task-management |
+| New product → Implementation | `implement-task`, `implement-phase`, `implement-plan` | code, tests | core principles, task-management |
 | New product → Integration test | `qa-integration-test` | integration test report | core principles |
 | New product → QA | `qa-system-test` | system test report | core principles |
-| Bug fix → Task creation | `task-define` | defect task file | task-management |
+| Bug fix → Task creation | `create-task` | bug ticket file | task-management |
 | Bug fix → Fix | `implement-task` | code, tests, root cause analysis | core principles, task-management |
 | Bug fix → Integration test | `qa-integration-test` | integration test report | core principles |
 | Bug fix → Regression | `qa-system-test` | system test report | core principles |
-| Maintenance → Ad-hoc | `task-define`, `implement-task` | task file, code, tests | core principles, task-management |
+| Maintenance → Ad-hoc | `create-task`, `implement-task` | task file, code, tests | core principles, task-management |
 | Maintenance → Ad-hoc → Test | `qa-integration-test` | integration test report | core principles |
 | Maintenance → Optimization | `codebase-review`, `plan`, `implement-phase` | audit report, plan, code | core principles, task-management |
 | Incremental feature | same as new product | same as new product (amended) | core principles, task-management |
 
-All four workflows are fully covered by 13 skills, 1 agent, and 2 rule files. Behavioral guardrails are loaded into the session via the `gl` agent (automatic) or `/gl:init` (manual fallback). No workflow step requires a component not listed in the plugin specification.
+All four workflows are fully covered by 13 skills, 1 agent, and 2 rule files. Behavioral guardrails are loaded into the session via the `stc` agent (automatic) or `/stc:init` (manual fallback). No workflow step requires a component not listed in the plugin specification.

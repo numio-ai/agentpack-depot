@@ -1,9 +1,9 @@
 ---
-name: define
-description: Definition stage — produce vision, product specification, and requirements in docs/. Invoke with /gl:define when starting discovery for a new or incremental product.
+name: define-product
+description: Definition stage — produce vision, product specification, and requirements in docs/. Invoke with /stc:define-product when starting discovery for a new or incremental product.
 ---
 
-# Definition (`/gl:define`)
+# Definition (`/stc:define-product`)
 
 ## Preconditions
 - **None.** This skill may create `docs/` and initial documents if they do not exist.
@@ -18,7 +18,7 @@ description: Definition stage — produce vision, product specification, and req
 
 ## Usage
 ```
-/gl:define
+/stc:define-product
 ```
 Collaborate with the user through drafts and feedback until they approve proceeding.
 
@@ -36,6 +36,7 @@ Collaborate with the user through drafts and feedback until they approve proceed
 
 5. **Consistency** — If any document changes, check downstream docs in the chain: vision → spec → requirements. State explicitly what you updated and why.
 
-6. **Gate** — Do not treat the stage as complete until the **user** explicitly approves moving to `/gl:design`.
+6. **Gate** — Do not treat the stage as complete until the **user** explicitly approves moving to `/stc:design`.
 
 **Discipline:** Do not silently skip validation. Do not proceed to architecture without user approval to leave this stage.
+

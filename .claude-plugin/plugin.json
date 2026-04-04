@@ -1,9 +1,9 @@
 {
-  "name": "gl",
-  "description": "AI-assisted SDLC: definition, architecture, planning, implementation, QA",
+  "name": "stc",
+  "description": "Full AI-assisted software lifecycle: spec, architecture, plan, implement, test",
   "version": "0.1.0",
   "author": {
     "name": "Vladimir Kroz"
   },
-  "repository": "https://github.com/vkroz/GearLoop"
+  "repository": "https://github.com/vkroz/spec-to-code"
 }

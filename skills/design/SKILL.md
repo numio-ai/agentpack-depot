@@ -1,9 +1,9 @@
 ---
 name: design
-description: Architecture stage — produce high-level architecture document. Invoke with /gl:design after definition docs exist.
+description: Architecture stage — produce high-level architecture document. Invoke with /stc:design after definition docs exist.
 ---
 
-# Design (`/gl:design`)
+# Design (`/stc:design`)
 
 ## Preconditions
 **Required before starting:**
@@ -11,7 +11,7 @@ description: Architecture stage — produce high-level architecture document. In
 - `docs/spec.md`
 - `docs/requirements.md`
 
-If any are missing, stop and tell the user: *Cannot run `/gl:design` — definition documents not found. Run `/gl:define` first.*
+If any are missing, stop and tell the user: *Cannot run `/stc:design` — definition documents not found. Run `/stc:define-product` first.*
 
 ## Output
 | Artifact | Path |
@@ -24,7 +24,7 @@ If any are missing, stop and tell the user: *Cannot run `/gl:design` — definit
 
 ## Usage
 ```
-/gl:design
+/stc:design
 ```
 
 ## Workflow
@@ -37,7 +37,7 @@ If any are missing, stop and tell the user: *Cannot run `/gl:design` — definit
 
 4. **Document consistency** — If architectural decisions change scope (e.g. defer a feature), update `docs/spec.md` and/or `docs/requirements.md` and state why. Chain: vision → spec → requirements → architecture.
 
-5. **Gate** — User explicitly approves before `/gl:plan`.
+5. **Gate** — User explicitly approves before `/stc:plan`.
 
 ## Discipline
 - Do not invent requirements; align with definition docs or flag conflicts to the user.
