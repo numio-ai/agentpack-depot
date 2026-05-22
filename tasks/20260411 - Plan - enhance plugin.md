@@ -43,7 +43,7 @@ Improvements that build on the foundation and deepened skills.
 
 | Task | Description | Depends On |
 |------|-------------|------------|
-| 08 | Add `/stc:status` skill | 02 |
+| 08 | Add `/agn:status` skill | 02 |
 | 09 | Strengthen implementation skill (`implement` — unified task/phase/all) | 01 |
 | 10 | Add SDLC document review to `codebase-review` | — |
 | 11 | Resolve `tasks/intake/` directory | — |
@@ -75,7 +75,7 @@ Tasks 10 and 11 have no dependencies and can execute at any time.
 - AC4: At least one hook enforces structural validation on commit (YAML validity, directory-status consistency)
 - AC5: `define-product`, `design`, `plan` skills each contain: artifact template with required sections, enumerated validation checklist, minimum information thresholds
 - AC6: QA skills contain: test discovery step, structured report template, explicit "no tests" handling
-- AC7: `/stc:status` skill exists and reports SDLC progress from artifact/task state
+- AC7: `/agn:status` skill exists and reports SDLC progress from artifact/task state
 - AC8: Implementation skills explicitly restate per-task contract (no shortcuts in batch mode) and require architecture compliance check
 - AC9: `codebase-review` includes architecture and spec compliance categories
 - AC10: `tasks/intake/` is either documented as a lifecycle state or removed

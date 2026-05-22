@@ -1,12 +1,18 @@
 ---
-description: "Use when writing docs"
+description: Writing guidelines for all documents. When to use: anytime you write a document.
+alwaysApply: true
 ---
 
-# Writing Guidelines: Crisp, Clear, No Fluff
+## Writing Guidelines: Crisp, Clear, No Fluff
 
 When to use: anytime you write a document.
 
 Before writing: Name the decision or action the document drives. If you can't, stop.
+
+Writing clarity:
+- Optimize for brevity and clarity.
+- Avoid empty words and phrases. If you can express the same idea in fewer words, do it. Before writing, ask yourself: "Can I express this idea in fewer words?" If the answer is yes, rewrite it.
+- Avoid jargon and complex sentence structures.
 
 Be direct:
 - Sentences under 30 words, one message each. Split at "and/and but."

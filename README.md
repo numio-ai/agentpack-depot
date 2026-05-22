@@ -1,72 +1,89 @@
-# spec-to-code
+# Agenture Loop
 
-Claude Code plugin for AI-assisted SDLC: definition, architecture, planning, implementation, QA.
+Collection of plugind for agentic SDLC using Claude Code.
 
+## Work-unit hierarchy
 
-## Install
+The plugin supports a four-tier hierarchy. Each tier is optional one level up — a task may have no feature, and a feature may have no epic.
 
-
-## Getting started
-
-1. Install the plugin. 
-
-```bash
-claude plugin install spec-to-code@<marketplace-name>
+```
+product → epic → feature → task
 ```
 
-or install from local directory:
-```bash
-claude --plugin-dir /path/to/spec-to-code
-```
+| Tier | Purpose | File location |
+|------|---------|---------------|
+| **Product** | Vision, specification, requirements | `docs/vision.md`, `docs/spec.md`, `docs/requirements.md` |
+| **Epic** | Functional block larger than a feature; decomposes into features | `tasks/epics/YYYYMMDD_<slug>.md` |
+| **Feature** | Named product initiative; produces a plan and child tasks | `tasks/features/YYYYMMDD_<slug>.md` |
+| **Task** | Unit of implementation work | `tasks/<state>/YYYYMMDD_<slug>.md` (where state is `backlog`, `active`, or `done`) |
 
-2. The `stc` agent activates automatically and loads behavioral rules. If your setup cannot use the `stc` agent, run `/stc:load-rules` at session start instead.
+Bugs are tasks with `kind: bug`. Same lifecycle. Can be attached to a feature or ad-hoc.
 
-3. Use plugin skills to run the workflows. Run `/stc:define-product` to start a new product, or `/stc:create-task` for a one-off task or bug ticket. See "Skills" section below for more details.
+See `rules/task-management.md` for the full model.
+
 
 ## Skills
 
+The plugin ships 14 skills, namespaced as `/agn:<scope>-<action>`. Skills group by scope under tab completion.
+
 ### SDLC workflow (run in order for new products)
 
-| Step | Command | What it does |
-|------|---------|--------------|
-| 0. Init (if no agent) | `/stc:load-rules` | Load rules into session context |
-| 1. Definition | `/stc:define-product` | Vision, spec, requirements in `docs/` |
-| 2. Architecture | `/stc:design` | `docs/architecture.md` |
-| 3. Planning | `/stc:plan` | `docs/implementation-plan.md` + task files in `tasks/backlog/` |
-| 4. Implementation | `/stc:implement task <path>` | One task: detailed design, code, tests |
-| | `/stc:implement plan <path>` | Full plan, phase by phase |
-| | `/stc:implement plan <path> phase N` | Specific phase(s) of a plan |
-| 5. Integration test | `/stc:qa-integration-test` | Verify phase or ad-hoc work + regression |
-| 6. System test | `/stc:qa-system-test` | Full product test, release gate |
+| Scope | Skill | What it does |
+|-------|-------|--------------|
+| Init | `/agn:session-load` | Load behavioral rules into session context (manual fallback if the agent is unavailable) |
+| Product | `/agn:product-define` | Vision, spec, requirements in `docs/` |
+| Product | `/agn:product-design` | `docs/architecture.md` |
+| Epic | `/agn:epic-create` | Epic file + linked feature files |
+| Epic | `/agn:epic-implement` | Execute every linked feature of an epic in order |
+| Feature | `/agn:feature-create` | Feature file + linked task files |
+| Feature | `/agn:feature-implement` | Execute every open task of a feature in order |
+| Task | `/agn:task-create` | Task or bug ticket in `tasks/backlog/` |
+| Task | `/agn:task-implement` | Execute a single task: detailed design → code → tests |
+| QA | `/agn:qa-integration` | Integration test for a feature, epic boundary, or ad-hoc work |
+| QA | `/agn:qa-system` | Full product system test before release |
 
-### Task and maintenance
+### Code and maintenance
 
-| Command | What it does |
-|---------|--------------|
-| `/stc:create-task` | New task or bug ticket in `tasks/backlog/` (dev tasks, bugs, refactors, chores) |
-| `/stc:codebase-review` | Read-only audit, produces backlog tasks |
+| Skill | What it does |
+|-------|--------------|
+| `/agn:code-review` | Read-only codebase audit; produces backlog tasks |
+| `/agn:code-comment` | Add explanatory comments to source code |
+| `/agn:code-commit` | Stage files and write a well-formed git commit message |
 
-### Utilities
-
-| Command | What it does |
-|---------|--------------|
-| `/stc:commit-code` | Staging and git commit guidance |
-| `/stc:comment-code` | Add explanatory comments to code |
 
 ## Workflows supported
 
-- **New product** — `/stc:define-product` → `/stc:design` → `/stc:plan` → `/stc:implement plan` → `/stc:qa-system-test`
-- **Bug fix** — `/stc:create-task bug` → `/stc:implement task` → `/stc:qa-integration-test` → `/stc:qa-system-test`
-- **Maintenance** — `/stc:create-task task` → `/stc:implement task` → `/stc:qa-integration-test`
-- **Incremental feature** — same as new product, but `/stc:define-product` amends existing docs
-- **Codebase optimization** — `/stc:codebase-review` → `/stc:plan` → `/stc:implement plan ... phase N` → `/stc:qa-system-test`
+- **New product** — `/agn:product-define` → `/agn:product-design` → `/agn:epic-create` (or `/agn:feature-create` if no epic tier needed) → `/agn:epic-implement` / `/agn:feature-implement` → `/agn:qa-system`
+- **Bug fix** — `/agn:task-create bug` → `/agn:task-implement` → `/agn:qa-integration` → `/agn:qa-system`
+- **Ad-hoc maintenance** — `/agn:task-create` → `/agn:task-implement` → `/agn:qa-integration`
+- **Incremental feature** — `/agn:feature-create` (against existing product docs) → `/agn:feature-implement` → `/agn:qa-integration`
+- **Codebase optimization** — `/agn:code-review` → `/agn:feature-create` (or `/agn:epic-create` for larger scope) → `/agn:feature-implement` → `/agn:qa-system`
 
-## Example use cases
 
-- **Build a new product from scratch** — `/stc:define-product` → `/stc:design` → `/stc:plan` → `/stc:implement plan` → `/stc:qa-system-test`. Claude facilitates writing specs, designs the architecture, generates a phased task plan, then autonomously implements and tests each task.
-- **Fix a bug** — `/stc:create-task bug` → `/stc:implement task` → `/stc:qa-integration-test`. Claude captures the defect, investigates root cause, implements the fix with tests, and validates no regressions.
-- **Add a feature to an existing product** — `/stc:define-product` amends existing docs with the new feature, then the standard design → plan → implement → QA flow executes scoped to that feature.
-- **Audit and reduce technical debt** — `/stc:codebase-review` produces a prioritized report of duplication, drift, and fragmentation; `/stc:plan` → `/stc:implement plan ... phase N` executes the approved improvements.
+## taskman.sh — task and feature CLI
+
+All create / move / close / list operations on epics, features, and tasks go through `scripts/taskman.sh`. Skills compose content in dialog with the user, then hand off to taskman as the save step. Do not write task files directly.
+
+```bash
+./scripts/taskman.sh help                                # full surface
+./scripts/taskman.sh new epic    --slug <s> --title T < body
+./scripts/taskman.sh new feature --slug <s> --title T [--epic <s>] < body
+./scripts/taskman.sh new task    --title T [--feature <s>] [--kind task|bug] < body
+./scripts/taskman.sh finalize <path>                     # clear draft: true
+./scripts/taskman.sh discard  <path>                     # delete a draft
+./scripts/taskman.sh move <task-path> <backlog|active|done>
+./scripts/taskman.sh list epics    [--status backlog|active|done]
+./scripts/taskman.sh list features [--epic <s>] [--status backlog|active|done]
+./scripts/taskman.sh list tasks    [--feature <s>] [--status backlog|active|done] [--kind task|bug]
+./scripts/taskman.sh epic show    <slug>
+./scripts/taskman.sh epic close   <slug>                 # fails unless all member features in done
+./scripts/taskman.sh feature show  <slug>
+./scripts/taskman.sh feature close <slug>                # fails unless all member tasks in done
+./scripts/taskman.sh validate
+```
+
+`epic close` and `feature close` enforce the lifecycle rule: an epic can only close when every feature with matching `epic: <slug>` is in `done`, and a feature can only close when every task with matching `feature: <slug>` is in `done`.
+
 
 ## Project layout created by workflows
 
@@ -75,20 +92,27 @@ docs/vision.md
 docs/spec.md
 docs/requirements.md
 docs/architecture.md
-docs/implementation-plan.md
-tasks/backlog/ | active/ | done/
+docs/<area>/.../-spec.md         # feature-scoped specs
+tasks/
+  epics/                          # YYYYMMDD_<slug>.md
+  features/                       # YYYYMMDD_<slug>.md
+  backlog/                        # YYYYMMDD[_NN]_<slug>.md
+  active/
+  done/
 ```
 
 Created incrementally as you run each stage — no upfront scaffolding.
+
 
 ## How rules are loaded
 
 | Mechanism | How | Survives compaction | When to use |
 |-----------|-----|---------------------|-------------|
 | `stc` agent (default) | Automatic via `settings.json` | Yes | Recommended for most users |
-| `/stc:load-rules` | Manual, run once per session | No | When agent conflicts with another plugin |
+| `/agn:session-load` | Manual, run once per session | No | When agent conflicts with another plugin |
 
-Rules live in `rules/first-principles.md` and `rules/task-management.md`. The agent inlines them in its system prompt; `/stc:load-rules` injects them via `!cat`.
+Rules live in `rules/first-principles.md`, `rules/task-management.md`, and `rules/writing-guideline.md`. The agent inlines them in its system prompt; `/agn:session-load` injects them via `!cat`.
+
 
 ## Development and testing
 

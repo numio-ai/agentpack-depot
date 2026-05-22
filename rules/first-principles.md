@@ -1,54 +1,91 @@
 ---
+description: Foundational behavioral principles for AI agents. Must always be followed by all agents.
 alwaysApply: true
 ---
 
+
 # CRITICAL RULES
 
-## Have laser focus on current task
-When work on tasks you must laser focus only on one task you're working on. Never get distracted to additional cosmetic improvements like better formatting or better logs, unless user explicitely asked you to do. Your are at your best solving one problem at a time. 
+These rules bias toward caution and discipline over speed. For trivial edits, use judgment.
 
-## Strictly follow design pricnciples
-- YAGNI: never add additional functionality which is not directly related to your task. Inform user when you identify additional opportunities for improvemnets, provide your recommendations. But never mix two unrelataed modifications in one commit. E.g. if you work in implementing feature and identified more flexible way to configure the code, you first complete your main task, and give user your recommendations for optimiztion. If user agrees, you will work on optimization as separate task. 
-- KISS: keep your soltuions simple. You're successful when your code is well structured, maintanable, and simple. 
-- DRY: don't repeat yourself. Extract shared logic into reusable functions or modules instead of duplicating code.
-- Readability over performance: prioritize clear, readable code over clever optimizations. Only optimize when there is a measured performance problem.
+## Laser focus on the current task
+
+Do one thing. Do not touch adjacent code, formatting, comments, or logs unless the user asked.
+
+**Test:** Every changed line must trace directly to the user's request. If it does not, revert it.
+
+If you spot a real improvement outside scope, note it for the user. Do not bundle it into the current change.
+
+## Design principles
+
+- **YAGNI:** Build only what the task requires. No flexibility, configurability, or abstractions for hypothetical future use. If you find a better design while working, finish the task first and propose the optimization separately.
+- **KISS:** Pick the simplest solution that solves the problem. If you wrote 200 lines and it could be 50, rewrite it. Ask yourself: "Would a senior engineer call this overcomplicated?" If yes, simplify.
+- **DRY:** Extract shared logic into a reusable function when the same code appears three or more times. Two occurrences are not duplication — they may legitimately diverge.
+- **Readability over performance:** Optimize only when you have a measured performance problem. Otherwise, prioritize clear code.
+
+## Surgical changes
+
+Touch only what you must. Clean up only your own mess.
+
+When editing existing code:
+- Do not "improve" adjacent code, comments, or formatting.
+- Do not refactor things that are not broken.
+- Match existing style, even if you would write it differently.
+- If you notice unrelated dead code, mention it — do not delete it.
+
+When your changes create orphans:
+- Remove imports, variables, and functions that **your** changes made unused.
+- Do not remove pre-existing dead code unless asked.
+
+## Goal-driven execution
+
+Convert every task into a verifiable goal before writing code.
+
+| Vague ask | Verifiable goal |
+|-----------|-----------------|
+| "Add validation" | Write tests for invalid inputs, then make them pass |
+| "Fix the bug" | Write a test that reproduces it, then make it pass |
+| "Refactor X" | Ensure existing tests pass before and after |
+
+For multi-step tasks, state a brief plan with a verification check per step:
+
+```
+1. <step> → verify: <check>
+2. <step> → verify: <check>
+```
+
+Strong success criteria let you self-verify and loop. Weak criteria ("make it work") force constant clarification.
 
 ## Clarify ambiguous requirements
-- Ask clarifying questions when requirements are ambiguous or incomplete. Don't make assumptions.
-- If multiple interpretations are possible, present options to the user and wait for direction before proceeding.
 
-## Behavior when executing complex plans
-- Always explain your steps to user before you proceeed to execution
-- When plan consists of multiple steps, and each steps involves multiple changes or risky changes, you must review step outcomes with users, and seek for feedback. 
-- You must get explicit user approval to proceed to next steps, after you reviewd with user results of previous step and confirmed successful completion. 
+Before asking, spend up to one minute on read-only investigation: grep the codebase, read related files, check memory. Your question should be specific — "Found tunnels X and Y in config, which one?" beats "What tunnel?"
 
-## Troubleshooting:
-- Always look for root cause - Take systematic approach.
-- Fix root cause first - Never start with workarounds.
-- Minimize code changes - The less you modify, the better.
+If multiple interpretations remain after investigation, present them as options and wait for direction. Do not guess silently.
 
-## Code Generation Guidelines
-- Follow existing code patterns in the repository
-- Include appropriate error handling
-- Add comments for complex logic
-- Write tests for new functionality
+## Executing complex plans
 
-## Documentation Guidelines
-- Update README files when adding new features
-- Create ADRs for significant architectural decisions in the 'docs' folder
-- Keep specifications updated during implementation in the 'docs' folder
+- State your plan before execution.
+- For multi-step plans with risky or multi-file changes, review each step's outcome with the user.
+- Get explicit approval before proceeding to the next step.
 
-## Planning Guidelines
+## Troubleshooting
 
-Plans are requirements documents, not implementation guides. The agent derives the implementation from requirements.
+- Find the root cause before changing code. Reproduce the bug first.
+- Fix root cause, not symptoms. Workarounds are a last resort and must be flagged as such.
+- Minimize code changes. The smaller the diff, the easier the review.
 
-### Plan Structure
+## Planning guidelines
+
+Plans are requirements documents, not implementation guides. The agent derives implementation from requirements.
+
+### Plan structure
+
 A proper plan MUST contain:
-- **Problem statement**: What problem are we solving and why
-- **Objective**: Desired end state
-- **Requirements**: Numbered (R1, R2, ...) with measurable specifications
-- **Acceptance criteria**: Testable conditions that prove completion
-- **Risks and mitigations**: What could go wrong
+- **Problem statement** — what problem are we solving and why
+- **Objective** — desired end state
+- **Requirements** — numbered (R1, R2, ...) with measurable specifications
+- **Acceptance criteria** — testable conditions that prove completion
+- **Risks and mitigations** — what could go wrong
 
 A proper plan MUST NOT contain:
 - Implementation code (no HCL, Python, bash, etc.)
@@ -56,13 +93,14 @@ A proper plan MUST NOT contain:
 - Step-by-step implementation instructions
 - Line-by-line changes
 
-### Separation of Concerns
+### Separation of concerns
+
 | Document | Contains | Does NOT contain |
 |----------|----------|------------------|
 | Plan | WHAT and WHY | HOW (implementation) |
 | Code | HOW (implementation) | Requirements rationale |
 
-### Example: Good vs Bad Requirements
+### Example: good vs bad requirements
 
 **Good** (requirement):
 > R1: Persistent EBS Volume
@@ -81,12 +119,16 @@ resource "aws_ebs_volume" "data" {
 ```
 
 ### Rationale
-- Plans outlive implementations - requirements remain valid even if implementation changes
-- Agents can find better solutions when not constrained by prescribed code
-- Code review focuses on "does it meet requirements?" not "does it match the plan?"
-- Plans are readable by non-technical stakeholders
 
-## Communication Style
-- Be direct and concise
-- No fluff, pleasantries, or unrelated content
-- Focus on technical solutions and implementation details
+- Plans outlive implementations — requirements remain valid even if the implementation changes.
+- Agents can find better solutions when not constrained by prescribed code.
+- Code review focuses on "does it meet requirements?" not "does it match the plan?"
+- Plans are readable by non-technical stakeholders.
+
+## Communication style
+
+- Be direct and concise.
+- No fluff, pleasantries, or unrelated content.
+- Focus on technical solutions and implementation details.
+- Use absolute dates, not "last week" or "soon."
+- Define every acronym on first use.

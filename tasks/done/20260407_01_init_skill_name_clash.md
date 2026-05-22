@@ -17,7 +17,7 @@ When users type `/init` in a project where the SpecToCode plugin is installed, t
 
 **Expected:** The SpecToCode rule-loading skill has a distinctive name that does not collide with any Claude Code built-in command, so users can invoke it unambiguously and the plugin does not shadow (or appear to shadow) a core Claude Code feature.
 
-**Actual:** The skill is named `init`. `/init` invokes Claude Code's built-in command, not the plugin. If the user discovers and invokes the namespaced form (`/stc:init`), they then hit a separate sandbox-permission failure (tracked in `tasks/backlog/20260404_12_init_skill_blocked_by_sandbox.md`). In practice there is no working path for a user to load the rules via a slash command from an external project.
+**Actual:** The skill is named `init`. `/init` invokes Claude Code's built-in command, not the plugin. If the user discovers and invokes the namespaced form (`/agn:init`), they then hit a separate sandbox-permission failure (tracked in `tasks/backlog/20260404_12_init_skill_blocked_by_sandbox.md`). In practice there is no working path for a user to load the rules via a slash command from an external project.
 
 ## Reproduction steps
 
@@ -25,17 +25,17 @@ When users type `/init` in a project where the SpecToCode plugin is installed, t
 2. Open a Claude Code session in that project.
 3. Type `/init` at the prompt.
 4. Observe that Claude Code's built-in `/init` runs (generating/updating `CLAUDE.md`), not the SpecToCode rule loader.
-5. Try `/stc:init` and observe either (a) the sandbox-permission error from ticket 12 when invoked from an external project, or (b) correct behaviour only when invoked from inside the SpecToCode repo.
+5. Try `/agn:init` and observe either (a) the sandbox-permission error from ticket 12 when invoked from an external project, or (b) correct behaviour only when invoked from inside the SpecToCode repo.
 
 ## Environment & context
 
 - **Affected file:** `skills/init/SKILL.md` — skill name `init` declared in frontmatter (line 2).
 - **Related files:**
   - `rules/first-principles.md` and `rules/task-management.md` — content the skill is supposed to load.
-  - `README.md` and `docs/spec-to-code-specification.md` — any user-facing references to `/init` or `/stc:init` that will need updating once the skill is renamed.
+  - `README.md` and `docs/spec-to-code-specification.md` — any user-facing references to `/init` or `/agn:init` that will need updating once the skill is renamed.
 - **Clash target:** Claude Code's built-in `/init` command, which creates/updates `CLAUDE.md` and is a core, documented feature of Claude Code.
 - **Scope:** No other SpecToCode skill name collides with a Claude Code built-in based on the current `skills/` directory (`codebase-review`, `commit-code`, `create-plan`, `create-task`, `define-product`, `design`, `implement`, `qa-integration-test`, `qa-system-test`, `comment-code` are all distinct).
-- **Related ticket:** `tasks/backlog/20260404_12_init_skill_blocked_by_sandbox.md` — separate but adjacent bug. That ticket covers the sandbox permission failure when the skill *is* reached via `/stc:init`. This ticket covers the naming collision itself. Both should likely be resolved together when the skill is redesigned, but they are independently valid defects.
+- **Related ticket:** `tasks/backlog/20260404_12_init_skill_blocked_by_sandbox.md` — separate but adjacent bug. That ticket covers the sandbox permission failure when the skill *is* reached via `/agn:init`. This ticket covers the naming collision itself. Both should likely be resolved together when the skill is redesigned, but they are independently valid defects.
 
 ## Risks & impact
 
