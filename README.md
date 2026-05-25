@@ -1,127 +1,74 @@
-# Agenture Loop
+# Agenture — Claude Code Plugin Marketplace
 
-Collection of plugind for agentic SDLC using Claude Code.
+A marketplace of Claude Code plugins for agentic software development workflows.
 
-## Work-unit hierarchy
+## Install
 
-The plugin supports a four-tier hierarchy. Each tier is optional one level up — a task may have no feature, and a feature may have no epic.
-
-```
-product → epic → feature → task
-```
-
-| Tier | Purpose | File location |
-|------|---------|---------------|
-| **Product** | Vision, specification, requirements | `docs/vision.md`, `docs/spec.md`, `docs/requirements.md` |
-| **Epic** | Functional block larger than a feature; decomposes into features | `tasks/epics/YYYYMMDD_<slug>.md` |
-| **Feature** | Named product initiative; produces a plan and child tasks | `tasks/features/YYYYMMDD_<slug>.md` |
-| **Task** | Unit of implementation work | `tasks/<state>/YYYYMMDD_<slug>.md` (where state is `backlog`, `active`, or `done`) |
-
-Bugs are tasks with `kind: bug`. Same lifecycle. Can be attached to a feature or ad-hoc.
-
-See `rules/task-management.md` for the full model.
-
-
-## Skills
-
-The plugin ships 14 skills, namespaced as `/agn:<scope>-<action>`. Skills group by scope under tab completion.
-
-### SDLC workflow (run in order for new products)
-
-| Scope | Skill | What it does |
-|-------|-------|--------------|
-| Init | `/agn:session-load` | Load behavioral rules into session context (manual fallback if the agent is unavailable) |
-| Product | `/agn:product-define` | Vision, spec, requirements in `docs/` |
-| Product | `/agn:product-design` | `docs/architecture.md` |
-| Epic | `/agn:epic-create` | Epic file + linked feature files |
-| Epic | `/agn:epic-implement` | Execute every linked feature of an epic in order |
-| Feature | `/agn:feature-create` | Feature file + linked task files |
-| Feature | `/agn:feature-implement` | Execute every open task of a feature in order |
-| Task | `/agn:task-create` | Task or bug ticket in `tasks/backlog/` |
-| Task | `/agn:task-implement` | Execute a single task: detailed design → code → tests |
-| QA | `/agn:qa-integration` | Integration test for a feature, epic boundary, or ad-hoc work |
-| QA | `/agn:qa-system` | Full product system test before release |
-
-### Code and maintenance
-
-| Skill | What it does |
-|-------|--------------|
-| `/agn:code-review` | Read-only codebase audit; produces backlog tasks |
-| `/agn:code-comment` | Add explanatory comments to source code |
-| `/agn:code-commit` | Stage files and write a well-formed git commit message |
-
-
-## Workflows supported
-
-- **New product** — `/agn:product-define` → `/agn:product-design` → `/agn:epic-create` (or `/agn:feature-create` if no epic tier needed) → `/agn:epic-implement` / `/agn:feature-implement` → `/agn:qa-system`
-- **Bug fix** — `/agn:task-create bug` → `/agn:task-implement` → `/agn:qa-integration` → `/agn:qa-system`
-- **Ad-hoc maintenance** — `/agn:task-create` → `/agn:task-implement` → `/agn:qa-integration`
-- **Incremental feature** — `/agn:feature-create` (against existing product docs) → `/agn:feature-implement` → `/agn:qa-integration`
-- **Codebase optimization** — `/agn:code-review` → `/agn:feature-create` (or `/agn:epic-create` for larger scope) → `/agn:feature-implement` → `/agn:qa-system`
-
-
-## taskman.sh — task and feature CLI
-
-All create / move / close / list operations on epics, features, and tasks go through `scripts/taskman.sh`. Skills compose content in dialog with the user, then hand off to taskman as the save step. Do not write task files directly.
-
-```bash
-./scripts/taskman.sh help                                # full surface
-./scripts/taskman.sh new epic    --slug <s> --title T < body
-./scripts/taskman.sh new feature --slug <s> --title T [--epic <s>] < body
-./scripts/taskman.sh new task    --title T [--feature <s>] [--kind task|bug] < body
-./scripts/taskman.sh finalize <path>                     # clear draft: true
-./scripts/taskman.sh discard  <path>                     # delete a draft
-./scripts/taskman.sh move <task-path> <backlog|active|done>
-./scripts/taskman.sh list epics    [--status backlog|active|done]
-./scripts/taskman.sh list features [--epic <s>] [--status backlog|active|done]
-./scripts/taskman.sh list tasks    [--feature <s>] [--status backlog|active|done] [--kind task|bug]
-./scripts/taskman.sh epic show    <slug>
-./scripts/taskman.sh epic close   <slug>                 # fails unless all member features in done
-./scripts/taskman.sh feature show  <slug>
-./scripts/taskman.sh feature close <slug>                # fails unless all member tasks in done
-./scripts/taskman.sh validate
-```
-
-`epic close` and `feature close` enforce the lifecycle rule: an epic can only close when every feature with matching `epic: <slug>` is in `done`, and a feature can only close when every task with matching `feature: <slug>` is in `done`.
-
-
-## Project layout created by workflows
+Add the marketplace to Claude Code once, then install any plugin from it:
 
 ```
-docs/vision.md
-docs/spec.md
-docs/requirements.md
-docs/architecture.md
-docs/<area>/.../-spec.md         # feature-scoped specs
-tasks/
-  epics/                          # YYYYMMDD_<slug>.md
-  features/                       # YYYYMMDD_<slug>.md
-  backlog/                        # YYYYMMDD[_NN]_<slug>.md
-  active/
-  done/
+/plugin marketplace add AgentureHQ/agenture-loop
+/plugin install <plugin-name>@agenture
 ```
 
-Created incrementally as you run each stage — no upfront scaffolding.
+## Available plugins
 
+| Plugin | What it does | Docs |
+|--------|--------------|------|
+| `agn` | Agentic SDLC loop — spec, design, plan, implement, and test through structured `/agn:*` skills with built-in review gates | [plugins/agn/README.md](plugins/agn/README.md) |
 
-## How rules are loaded
+Install the SDLC plugin:
 
-| Mechanism | How | Survives compaction | When to use |
-|-----------|-----|---------------------|-------------|
-| `stc` agent (default) | Automatic via `settings.json` | Yes | Recommended for most users |
-| `/agn:session-load` | Manual, run once per session | No | When agent conflicts with another plugin |
-
-Rules live in `rules/first-principles.md`, `rules/task-management.md`, and `rules/writing-guideline.md`. The agent inlines them in its system prompt; `/agn:session-load` injects them via `!cat`.
-
-
-## Development and testing
-
-```bash
-# Load the plugin locally without installing:
-claude --plugin-dir ./
-
-# After making changes, reload inside Claude Code:
-/reload-plugins
+```
+/plugin install agn@agenture
 ```
 
-See [`docs/spec-to-code-specification.md`](docs/spec-to-code-specification.md) for the full product vision and functional specification.
+## Repository layout
+
+```
+agenture-loop/
+├── .claude-plugin/
+│   └── marketplace.json          # marketplace manifest
+├── plugins/
+│   └── agn/                      # the agentic-SDLC plugin
+│       ├── .claude-plugin/plugin.json
+│       ├── skills/
+│       ├── rules/
+│       ├── scripts/
+│       └── README.md
+├── docs/                         # product docs for the marketplace
+├── tasks/                        # this repo's own SDLC tracking (dogfoods agn)
+├── LICENSE
+├── PRIVACY.md
+└── README.md
+```
+
+## Adding a new plugin to the marketplace
+
+1. Create `plugins/<your-plugin>/` with its own `.claude-plugin/plugin.json` and any of `skills/`, `agents/`, `commands/`, `hooks/`, `.mcp.json`. All paths must be self-contained inside the plugin directory.
+2. Add a new entry to the `plugins` array in `.claude-plugin/marketplace.json`.
+3. Update the **Available plugins** table above.
+
+See [Claude Code's plugin marketplace docs](https://code.claude.com/docs/en/plugin-marketplaces.md) for the full schema.
+
+## Local development
+
+The repo dogfoods its own `agn` plugin via symlinks in `.claude/`:
+
+```
+.claude/skills -> plugins/agn/skills
+.claude/rules  -> plugins/agn/rules
+```
+
+When developing inside this repo with Claude Code, the `agn` skills load automatically without going through `/plugin install`.
+
+To test the marketplace before publishing:
+
+```
+/plugin marketplace add ./
+/plugin install agn@agenture
+```
+
+## License
+
+[Apache 2.0](LICENSE). See [PRIVACY.md](PRIVACY.md) for the privacy policy.

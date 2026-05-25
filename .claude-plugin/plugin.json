@@ -1,9 +1,0 @@
-{
-  "name": "stc",
-  "description": "Accelerates software delivery by automating SDLC stages inside Claude Code — Claude facilitates writing specs and designing architecture, then autonomously builds implementation plans, implements and tests the product — all driven by 13 structured /agn:* commands with built-in review gates and document consistency.",
-  "version": "0.1.0",
-  "author": {
-    "name": "Vladimir Kroz"
-  },
-  "repository": "https://github.com/vkroz/spec-to-code"
-}

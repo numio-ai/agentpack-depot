@@ -1,0 +1,15 @@
+{
+  "name": "agenture",
+  "owner": {
+    "name": "Agenture",
+    "email": "vlad@agenture.dev"
+  },
+  "description": "Plugin marketplace for the Agenture suite — agentic development workflows for Claude Code.",
+  "plugins": [
+    {
+      "name": "agn",
+      "source": "./plugins/agn",
+      "description": "Agentic SDLC for Claude Code. Automates spec, design, planning, implementation, and QA via /agn:* skills with built-in review gates and document consistency."
+    }
+  ]
+}
