@@ -42,6 +42,7 @@ PROJECT_DIR="${SCRIPT_DIR}/.."
 TASKS_DIR="${TASKMAN_TASKS_DIR:-${PROJECT_DIR}/tasks}"
 EPICS_DIR="${TASKS_DIR}/epics"
 FEATURES_DIR="${TASKS_DIR}/features"
+DOCS_SYNC_QUEUE="${TASKS_DIR}/docs-sync-queue.txt"
 STATES=(backlog active done)
 
 if [[ -t 1 ]]; then
@@ -138,6 +139,34 @@ slugify() {
 validate_slug() {
   local slug="$1"
   [[ "$slug" =~ ^[a-z][a-z0-9_]*$ ]] || die "Invalid slug: '$slug' — must match [a-z][a-z0-9_]*"
+}
+
+# ---------- Doc-sync queue (PostClose hook) ----------
+#
+# When a work unit closes (task → done, feature close, epic close), append an
+# entry to docs-sync-queue.txt. The /agn:docs-sync skill reads this queue and
+# proposes upstream doc updates. The queue is durable on disk — survives
+# context compaction and direct CLI use.
+
+emit_docs_sync_hint() {
+  local kind="$1" id="$2"
+  mkdir -p "${TASKS_DIR}"
+  printf '%s %s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$kind" "$id" >> "$DOCS_SYNC_QUEUE"
+  log_info "Doc-sync pending. Run /agn:docs-sync to review upstream doc drift."
+}
+
+# Print a hint to stderr if the queue has pending entries. Called from list
+# commands so users see the queue whenever they look at task state.
+check_docs_sync_queue() {
+  [[ -s "$DOCS_SYNC_QUEUE" ]] || return 0
+  local n
+  n="$(grep -c . "$DOCS_SYNC_QUEUE" 2>/dev/null || printf 0)"
+  (( n > 0 )) || return 0
+  if (( n == 1 )); then
+    log_warn "1 doc-sync entry pending in ${DOCS_SYNC_QUEUE}. Run /agn:docs-sync."
+  else
+    log_warn "${n} doc-sync entries pending in ${DOCS_SYNC_QUEUE}. Run /agn:docs-sync."
+  fi
 }
 
 # Required body sections per entity type. Echoed one per line.
@@ -553,6 +582,7 @@ cmd_move() {
   mv "$src" "$dest"
   yaml_set_field "$dest" status "$target_state"
   log_info "Moved $current_state → $target_state: $dest"
+  [[ "$target_state" == "done" ]] && emit_docs_sync_hint task "$dest"
   printf '%s\n' "$dest"
 }
 
@@ -699,6 +729,7 @@ cmd_epic_close() {
 
   yaml_set_field "$ep" status done
   log_info "Closed epic: $slug"
+  emit_docs_sync_hint epic "$slug"
   printf '%s\n' "$ep"
 }
 
@@ -771,6 +802,7 @@ cmd_feature_close() {
 
   yaml_set_field "$fp" status done
   log_info "Closed feature: $slug"
+  emit_docs_sync_hint feature "$slug"
   printf '%s\n' "$fp"
 }
 
@@ -814,6 +846,7 @@ cmd_list() {
     tasks)    cmd_list_tasks    "$@" ;;
     *) die "Unknown list subcommand: $sub" ;;
   esac
+  check_docs_sync_queue
 }
 
 cmd_validate() {
@@ -1000,7 +1033,33 @@ RELATIONSHIP TO GIT
   Epics span multiple worktrees. Operational convention, not enforced
   by taskman.
 
+DOC-SYNC QUEUE (PostClose hook)
+  After every successful close action — `move <path> done`, `feature close
+  <slug>`, `epic close <slug>` — taskman appends an entry to:
+
+    tasks/docs-sync-queue.txt
+
+  Format (one line per entry):
+    <ISO-8601 timestamp> <kind> <id-or-path>
+
+  Example:
+    2026-05-26T15:23:00Z task tasks/done/20260526_create_qa_subagent.md
+    2026-05-26T15:35:00Z feature qa_subagent_and_validation
+
+  `taskman.sh list` prints a one-line WARN hint when the queue is non-empty,
+  so you see pending entries whenever you look at task state.
+
+  Process the queue with `/agn:docs-sync`. The skill reads each entry,
+  reviews upstream docs (vision → spec → requirements → architecture →
+  linked spec) per rules/doc-maintenance.md, proposes diffs, and clears the
+  entry on user approval.
+
+  The queue is written by taskman.sh and cleared by /agn:docs-sync. Both
+  are "observability records" — not lifecycle units. Direct CLI users can
+  inspect or edit the queue file; the format is line-stable.
+
 See: rules/task-composition.md   # frontmatter shapes, body sections, summary template
+See: rules/doc-maintenance.md    # what to check on closure; how to propose updates
 EOF
 }
 

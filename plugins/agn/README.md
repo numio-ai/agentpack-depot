@@ -51,6 +51,7 @@ The plugin ships 8 skills. Lifecycle skills follow the verb-noun pattern `/agn:<
 | `/agn:code-review` | Read-only codebase audit; produces backlog tasks |
 | `/agn:code-comment` | Add explanatory comments to source code |
 | `/agn:code-commit` | Stage files and write a well-formed git commit message |
+| `/agn:docs-sync` | Process the doc-sync queue: review upstream docs for drift against recently closed units, propose diffs, apply after user approval, clear processed entries |
 
 ## Workflows supported
 
@@ -99,6 +100,7 @@ tasks/
   active/
   done/
   gaps/                           # YYYYMMDD-HHMMSS_<task-slug>.md — design-gap escalation log
+  docs-sync-queue.txt             # PostClose hook queue; processed by /agn:docs-sync
 ```
 
 Created incrementally as you run each stage — no upfront scaffolding.
@@ -127,14 +129,44 @@ The five files:
 
 Persistence rules (storage layout, naming, lifecycle preconditions, CLI surface, validation behavior) live in `./scripts/taskman.sh help` — the script is the single writer and the authoritative reference.
 
+## PostClose hook and docs-sync
+
+Every successful close action — `taskman.sh move <path> done`, `feature close <slug>`, `epic close <slug>` — appends an entry to `tasks/docs-sync-queue.txt` and prints a "Doc-sync pending" hint. Run `/agn:docs-sync` to process the queue: it walks the dependency chain (vision → spec → requirements → architecture → linked spec) per `rules/doc-maintenance.md`, proposes diffs, applies after user approval, and clears each processed entry.
+
+The queue is durable on disk. `taskman.sh list` prints a WARN hint whenever the queue is non-empty, so you see pending entries during normal task-state checks.
+
+### Optional: surface the queue at session start
+
+For automatic surfacing of pending entries when a new Claude Code session opens in this project, add a SessionStart hook to your project's `.claude/settings.json` (or your user-level `~/.claude/settings.json`):
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "test -s tasks/docs-sync-queue.txt && printf 'Doc-sync pending: %s entries in tasks/docs-sync-queue.txt. Run /agn:docs-sync.\\n' \"$(wc -l < tasks/docs-sync-queue.txt | tr -d ' ')\" || true"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+The hook is opt-in — the plugin does not install it for you. Without it, the queue still persists; you just see the hint via `taskman.sh list` rather than at session start.
+
 ## Plugin layout
 
 ```
 plugins/agn/
 ├── .claude-plugin/plugin.json    # plugin manifest
-├── skills/                       # 8 /agn:* skills
+├── skills/                       # 9 /agn:* skills
 ├── agents/                       # planner (Design + Plan); qa (fresh-context validator)
 ├── rules/                        # first-principles, task-composition, writing-guideline, qa, doc-maintenance
-├── scripts/taskman.sh            # task lifecycle CLI (also: persistence reference via `help`)
+├── scripts/taskman.sh            # task lifecycle CLI; PostClose hook emits to docs-sync-queue.txt
 └── README.md
 ```

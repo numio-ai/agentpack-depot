@@ -6,9 +6,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 @.claude/rules/first-principles.md
 
-## Architecture rework in flight
+## Architecture rework complete
 
-Epic `agentic_sdlc_rework` (see `tasks/epics/`) is partly delivered. Five features have shipped: `unified_skills_and_cleanup` (the verb-noun skill surface `/agn:define|design|plan|implement|validate <level>` is live), `rules_split_and_new_files` (composition rules in `rules/task-composition.md`; persistence in `taskman.sh help`; new role-specific rule files `rules/qa.md` and `rules/doc-maintenance.md`), `planner_subagent` (Planner sub-agent at `plugins/agn/agents/planner.md`; `/agn:define`, `/agn:design`, and `/agn:plan` delegate composition to it), `task_escalation_protocol` (`/agn:implement task` detects design gaps, writes a gap-log to `tasks/gaps/`, halts with a routing message, and supports resume), and `qa_subagent_and_validation` (QA sub-agent at `plugins/agn/agents/qa.md`; `/agn:validate feature|epic|product` delegate to it; `/agn:validate task` runs lightweight gates in the main session). One feature remains in flight: `docsync_close_hook` (PostClose hook + `/agn:docs-sync`). Until that ships, doc sync remains manual.
+Epic `agentic_sdlc_rework` has shipped all six features:
+
+- `unified_skills_and_cleanup` — verb-noun skill surface `/agn:define|design|plan|implement|validate <level>` is live.
+- `rules_split_and_new_files` — composition rules in `rules/task-composition.md`; persistence in `taskman.sh help`; role-specific rule files `rules/qa.md` and `rules/doc-maintenance.md`.
+- `planner_subagent` — Planner sub-agent at `plugins/agn/agents/planner.md`; `/agn:define`, `/agn:design`, `/agn:plan` delegate composition to it.
+- `task_escalation_protocol` — `/agn:implement task` detects design gaps, writes a gap-log to `tasks/gaps/`, halts with a routing message, supports resume.
+- `qa_subagent_and_validation` — QA sub-agent at `plugins/agn/agents/qa.md`; `/agn:validate feature|epic|product` delegate to it; `/agn:validate task` runs lightweight gates in the main session.
+- `docsync_close_hook` — `taskman.sh` close actions append to `tasks/docs-sync-queue.txt`; `/agn:docs-sync` processes the queue, reviews upstream docs for drift per `rules/doc-maintenance.md`, proposes diffs.
 
 ## What this repo is
 
@@ -37,7 +44,10 @@ Consequences:
 
 All epic / feature / task mutations go through `plugins/agn/scripts/taskman.sh`. Skills compose content in dialog with the user, then hand off to taskman as the save step. Never write epic, feature, or task files under `tasks/{epics,features,backlog,active,done}/` directly — invariants (folder ↔ `status` YAML field, draft markers, lifecycle preconditions) are enforced by the script.
 
-**Exception:** gap-log files under `tasks/gaps/` are written via the Write tool directly. They are observability records produced by `/agn:implement task` when a design gap halts coding; they are not lifecycle units and have no taskman invariants. Format documented in `plugins/agn/skills/implement/SKILL.md` under "Design gap escalation protocol".
+**Exceptions** — observability records, not lifecycle units, written outside `taskman.sh`:
+
+- `tasks/gaps/` — gap-log files produced by `/agn:implement task` when a design gap halts coding. Format documented in `plugins/agn/skills/implement/SKILL.md` under "Design gap escalation protocol".
+- `tasks/docs-sync-queue.txt` — PostClose hook queue, appended by `taskman.sh` on each close action; cleared by `/agn:docs-sync` after upstream docs are reviewed. Format documented in `taskman.sh help` under "DOC-SYNC QUEUE".
 
 From the repo root, invoke it as `./plugins/agn/scripts/taskman.sh ...`. When working inside the plugin, `./scripts/taskman.sh` is equivalent. The script resolves `TASKS_DIR` relative to itself, so the active task tree is `plugins/agn/tasks/` *if invoked from inside the plugin* — but this repo's tracked tasks live in the **top-level** `tasks/` folder. Set `TASKMAN_TASKS_DIR=$PWD/tasks` when running from the root if the tasks folder being mutated isn't the one you expect.
 
