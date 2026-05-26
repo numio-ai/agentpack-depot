@@ -1,6 +1,6 @@
 ---
 name: validate
-description: Quality gates at any tier — task, feature, epic, or product. Invoke with /agn:validate <level>. Task runs the task's own gates in the main session. Feature and product use the migrated qa-integration / qa-system workflows. Epic and task placeholders depend on the QA sub-agent.
+description: Quality gates at any tier — task, feature, epic, or product. Invoke with /agn:validate <level>. Task runs the task's own ## Quality gates in the main session (lightweight). Feature, epic, and product delegate to the QA sub-agent (fresh-context validation against spec).
 argument-hint: task | feature | epic | product
 ---
 
@@ -24,116 +24,144 @@ If `$0` is not one of `task`, `feature`, `epic`, `product`, stop and list the va
 
 Read `$0`. Run exactly one of the branches below.
 
+## Validation via the QA sub-agent
+
+For `feature`, `epic`, and `product` levels, validation runs in the QA sub-agent (`plugins/agn/agents/qa.md`). The sub-agent loads `rules/qa.md`, reads the spec and the implementation, runs tests, and returns a verdict. Fresh context is the point — the agent that wrote the code has already collapsed the design space in their head; a fresh reader sees gaps that closed space hid.
+
+The `task` branch does **not** invoke the QA sub-agent — the task's own `## Quality gates` are narrow and the parent session has the right context to run them.
+
+When a workflow below says "delegate to QA", invoke it via the Agent tool with `subagent_type: qa` and a brief containing:
+
+- `level` — `feature` | `epic` | `product`
+- `scope` — slug (feature/epic) or "whole product"
+- `spec_paths` — paths to relevant documents (`docs/vision.md`, `docs/spec.md`, `docs/requirements.md`, `docs/architecture.md`, parent epic/feature file, linked spec)
+- `implementation_paths` — files, test commands, dev-server URLs, sample data locations
+- `regression_scope` (optional) — adjacent features/areas to re-check
+
+QA returns a structured response (`## Verdict`, `## Per-requirement results`, `## Issues` by severity, `## What I fixed`, `## What I escalated`, `## Report` path, `## Next steps`). Surface the verdict to the user. On `not ready`, present the issues and stop — do not silently advance the lifecycle (e.g., do not auto-close a feature whose QA verdict was `not ready`).
+
 ---
 
 ## $0 = task
 
-**Placeholder pending the `qa_subagent_and_validation` feature of epic `agentic_sdlc_rework`.**
+### Preconditions
 
-Lightweight task-level validation in the main session is not yet implemented. Today, the task's `## Quality gates` section is executed inline at the end of `/agn:implement task` (step 5: "Complete after user confirms").
+A task file at `$1` (path) — either in `tasks/active/` or `tasks/backlog/`. The task body must include a `## Quality gates` section listing the validation steps. If the task is in `done/`, validation has already run; warn the user and ask if they really want to re-run.
 
-Until `qa_subagent_and_validation` ships:
-- Read the task file's `## Quality gates` section and run each gate command manually, or rely on the inline gate run inside `/agn:implement task`.
+### Workflow
 
-After the feature ships, this branch will run the task's `## Quality gates` end-to-end in the main session, report results, and offer to move the task to `done`. The QA sub-agent is NOT involved at the task level — that role is reserved for feature/epic/product.
+1. **Read the task** — Load `$1`. Extract the `## Quality gates` content.
 
-Stop.
+2. **Run each gate** — For each gate item, execute the named command or perform the named check. If the gate is prose (e.g., "verify behavior X manually"), surface it to the user and wait for them to confirm.
+
+3. **Report** — Per-gate pass/fail. If any gate fails, name the failure specifically (command, exit code, observed behavior). Do not aggregate into a vague "tests failed" line.
+
+4. **Offer next step (do not auto-execute)** — If all gates pass:
+   - If the task is in `tasks/active/`, offer: *"All gates pass. Run `./scripts/taskman.sh move <path> done`?"*
+   - If the task is in `tasks/backlog/`, offer nothing — the user runs `/agn:implement task` for activation.
+   - In both cases, the user owns the decision to move state.
+
+5. **Stop.** Do not advance the task lifecycle without user instruction.
+
+### Discipline
+
+- **No QA sub-agent at this level.** The gates are narrow and named in the task body; the parent session has the right context to run them. Delegating would lose that context for negligible benefit.
+- **Do not modify the task file** beyond optionally appending a one-line note to its `## Quality gates` section if a gate is incorrect — and only with user approval. The `## Summary` is owned by `/agn:implement task`, not by this skill.
+- **Failures are reports, not fixes.** If a gate exposes a bug, file a bug task via `/agn:define task --kind bug --feature <slug>` — do not fix inline.
 
 ---
 
 ## $0 = feature
 
-### Purpose
-Validate that:
-1. **New functionality** delivered in the current feature scope behaves end-to-end.
-2. **Existing functionality** (prior features or related areas) still works.
-
 ### Preconditions
+
+- A feature slug or recent feature context. If `$1` is empty, infer from the most recent active/just-closed feature in `tasks/features/` or ask the user.
 - A runnable app or test environment the project uses (tests, dev server, etc.).
 - Enough implementation exists to exercise the scope (otherwise say what is missing).
 
-### Output
-Write an **integration test report** (markdown — `docs/` or user-chosen path), including:
-- Scope (feature slug, task IDs, or "ad-hoc: ...")
-- What was executed (commands, URLs, scenarios)
-- Pass/fail per scenario
-- Regressions found and severity
-- Open issues
-
-### Usage
-```
-/agn:validate feature
-```
-Optionally scope in the user message: *"feature worktree_isolated_dev_stacks only"*, *"after defect TASK-xxx"*, etc.
-
 ### Workflow
 
-1. Infer scope from context (recent feature, task just completed, or explicit user instruction).
+1. **Resolve scope** — Identify the feature slug. Read the feature file at `tasks/features/YYYYMMDD_<slug>.md` and its linked spec (if any) under `docs/<area>/.../-spec.md`.
 
-2. Run the project's integration/e2e tests if present; supplement with **manual checks** where needed.
+2. **Gather paths** — Collect:
+   - `spec_paths` — feature file, linked spec, related `docs/spec.md` sections.
+   - `implementation_paths` — source files changed for this feature (use `git log --name-only --grep <slug>` or ask user), test command(s), dev-server URLs.
+   - `regression_scope` — adjacent features or areas the user names as at-risk (optional).
 
-3. Focus on **interfaces between components** and **realistic user paths** for this slice of work.
+3. **Delegate to QA.** Per the **Validation via the QA sub-agent** section above, invoke with `level=feature` and the gathered paths.
 
-4. Do not claim release readiness — that is **`/agn:validate product`**.
+4. **Surface verdict** — Present QA's `## Verdict`, `## Per-requirement results`, and `## Issues` to the user. Name the report path so they can open it.
 
-### Feature-branch discipline
-- Fix failures you can within scope; escalate product decisions.
-- Keep the report factual and actionable.
+5. **Halt on not ready** — If verdict is `not ready`, stop. Do not offer `feature close`. Do not advance lifecycle. The user owns the decision to triage the issues (route to `/agn:define task --kind bug --feature <slug>` for fixes, or escalate spec changes).
+
+6. **Offer close on ready** — If verdict is `ready` and all member tasks are in `done`, offer: *"Run `./scripts/taskman.sh feature close <slug>`?"*. Do not auto-execute.
+
+### Discipline
+
+- Do not claim release readiness — that is `/agn:validate product`.
+- The QA sub-agent's report is the authoritative artifact. Do not paraphrase or re-summarize beyond what the user needs to triage.
+- If QA escalates, surface the escalation verbatim with QA's recommended next steps. Do not silently filter.
 
 ---
 
 ## $0 = epic
 
-**Placeholder pending the `qa_subagent_and_validation` feature of epic `agentic_sdlc_rework`.**
+### Preconditions
 
-Standalone epic validation via a fresh-context QA sub-agent is not yet implemented. Today, epic-level integration verification is handled by `/agn:validate feature` scoped to the whole epic (inherited from the old `qa-integration` skill called at the epic boundary inside `/agn:implement epic`).
+- An epic slug. If `$1` is empty, ask the user or list candidates: `./scripts/taskman.sh list epics`.
+- Every linked feature must already be closed (`status: done`). If any are still active/backlog, the epic is not ready for epic-level validation — direct the user to finish them first via `/agn:implement feature`.
 
-Until `qa_subagent_and_validation` ships:
-- Use `/agn:validate feature` and pass the epic scope as a hint in the user message.
-- Or run `/agn:validate feature` iteratively for each member feature to confirm no regressions across the epic.
+### Workflow
 
-After the feature ships, this branch will dispatch to a QA sub-agent with fresh context — the sub-agent sees the epic spec and the integrated result but not the implementer's reasoning, removing the bias that the agent who wrote the code also tests it.
+1. **Read the epic** — Load `tasks/epics/YYYYMMDD_<slug>.md`. Read every linked feature file. Note the epic's `## Acceptance criteria` — these are the cross-feature conditions the QA sub-agent will check.
 
-Stop.
+2. **Gather paths** — Collect:
+   - `spec_paths` — epic file, every linked feature file, relevant sections of `docs/spec.md` and `docs/architecture.md`.
+   - `implementation_paths` — source areas covered by the epic; full test suite command(s); integration scenarios.
+   - `regression_scope` — features outside this epic that share components or interfaces.
+
+3. **Delegate to QA.** Per the **Validation via the QA sub-agent** section above, invoke with `level=epic` and the gathered paths.
+
+4. **Surface verdict** — Present QA's response to the user. Highlight cross-feature findings (the seams between member features are where epic-level bugs concentrate).
+
+5. **Halt on not ready** — Same as feature branch: stop, do not offer `epic close`, let the user triage.
+
+6. **Offer close on ready** — If verdict is `ready`, offer: *"Run `./scripts/taskman.sh epic close <slug>`?"*. Do not auto-execute.
+
+### Discipline
+
+- Epic validation is about cross-feature interactions, not re-running per-feature tests. Trust prior `/agn:validate feature` reports if they are recent and the relevant features have not changed since.
+- The QA sub-agent's report is the authoritative artifact.
 
 ---
 
 ## $0 = product
 
 ### Preconditions
+
 - `docs/spec.md` and `docs/requirements.md` (or equivalent product docs) exist.
 - Implementation is intended to be **feature-complete** for the release under test.
 
 If docs are missing, say so and ask whether to proceed with a reduced checklist.
 
-### Purpose
-- Verify the **whole product** against documented behavior.
-- Run the **full automated test suite**; add or extend tests where critical paths lack coverage.
-- Exercise **end-to-end user flows** from the spec.
-- Produce a **system test report** with **Critical / Major / Minor** findings.
-
-### Output
-System test report including:
-- Coverage summary (what was exercised)
-- Issues with severity
-- What was fixed vs escalated
-- Sign-off recommendation (ready / not ready)
-
-### Usage
-```
-/agn:validate product
-```
-
 ### Workflow
 
-1. Re-read specs and requirements; build a checklist of flows and non-functional expectations.
+1. **Gather paths** — Collect:
+   - `spec_paths` — `docs/vision.md`, `docs/spec.md`, `docs/requirements.md`, `docs/architecture.md`, plus any per-area specs under `docs/<area>/.../-spec.md` that bound user-visible behavior.
+   - `implementation_paths` — the running app or build artifact; full test suite command(s); end-to-end test scenarios (or a path to the suite that hosts them).
+   - `regression_scope` — *"whole product"*. No subset.
 
-2. Run full test suite; inspect failures; add tests for critical gaps.
+2. **Delegate to QA.** Per the **Validation via the QA sub-agent** section above, invoke with `level=product` and the gathered paths. Tell QA to categorize findings as Critical / Major / Minor per `rules/qa.md`.
 
-3. Walk end-to-end scenarios in order of risk.
+3. **Surface verdict** — Present QA's response to the user. The report file (typically `docs/system/system-test-report.md`) is the artifact for sign-off; name its path prominently.
 
-4. Categorize issues; fix autonomously where clear; escalate decisions.
+4. **Halt on not ready** — Stop. Do not declare release readiness. The user owns the sign-off decision.
 
-5. Re-test after fixes until **Critical** and **Major** are cleared (per product policy).
+5. **Re-run loop** — If the user addresses findings and asks for re-validation, re-invoke QA with the same brief. Each run produces an updated report.
 
-6. **Gate** — User approves release readiness.
+6. **Sign-off gate** — Release readiness is a user decision, not a QA verdict. QA can recommend `ready`; the user owns the call.
+
+### Discipline
+
+- The QA sub-agent's report is the release artifact. Do not paraphrase it in a way that loses Critical/Major/Minor categorization.
+- If QA escalates spec ambiguities, surface them verbatim — these are signals that `docs/spec.md` or `docs/requirements.md` may need a revision via `/agn:design product`.

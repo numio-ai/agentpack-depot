@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture rework in flight
 
-Epic `agentic_sdlc_rework` (see `tasks/epics/`) is partly delivered. Four features have shipped: `unified_skills_and_cleanup` (the verb-noun skill surface `/agn:define|design|plan|implement|validate <level>` is live), `rules_split_and_new_files` (composition rules in `rules/task-composition.md`; persistence in `taskman.sh help`; new role-specific rule files `rules/qa.md` and `rules/doc-maintenance.md`), `planner_subagent` (Planner sub-agent at `plugins/agn/agents/planner.md`; `/agn:define`, `/agn:design`, and `/agn:plan` delegate composition to it), and `task_escalation_protocol` (`/agn:implement task` detects design gaps, writes a gap-log to `tasks/gaps/`, halts with a routing message, and supports resume). Two features remain in flight: `qa_subagent_and_validation` (QA sub-agent for feature/epic/product) and `docsync_close_hook` (PostClose hook + `/agn:docs-sync`). Until those ship, the QA sub-agent is a placeholder inside `/agn:validate task|epic`, and doc sync remains manual.
+Epic `agentic_sdlc_rework` (see `tasks/epics/`) is partly delivered. Five features have shipped: `unified_skills_and_cleanup` (the verb-noun skill surface `/agn:define|design|plan|implement|validate <level>` is live), `rules_split_and_new_files` (composition rules in `rules/task-composition.md`; persistence in `taskman.sh help`; new role-specific rule files `rules/qa.md` and `rules/doc-maintenance.md`), `planner_subagent` (Planner sub-agent at `plugins/agn/agents/planner.md`; `/agn:define`, `/agn:design`, and `/agn:plan` delegate composition to it), `task_escalation_protocol` (`/agn:implement task` detects design gaps, writes a gap-log to `tasks/gaps/`, halts with a routing message, and supports resume), and `qa_subagent_and_validation` (QA sub-agent at `plugins/agn/agents/qa.md`; `/agn:validate feature|epic|product` delegate to it; `/agn:validate task` runs lightweight gates in the main session). One feature remains in flight: `docsync_close_hook` (PostClose hook + `/agn:docs-sync`). Until that ships, doc sync remains manual.
 
 ## What this repo is
 
@@ -91,7 +91,12 @@ A skill lives at `plugins/agn/skills/<name>/SKILL.md`. The frontmatter `name:` f
 
 ## Editing agents
 
-Sub-agents live at `plugins/agn/agents/<name>.md`. The frontmatter `name:` field becomes the `subagent_type` used when a skill invokes them via the Agent tool. Today only one agent ships: `planner` (level-aware Design + Plan composer used by `/agn:define`, `/agn:design`, `/agn:plan`). Sub-agents have restricted toolsets — the Planner has no Write/Edit/Bash; it returns text, and the parent skill persists via `taskman.sh`.
+Sub-agents live at `plugins/agn/agents/<name>.md`. The frontmatter `name:` field becomes the `subagent_type` used when a skill invokes them via the Agent tool. Two agents ship today:
+
+- `planner` — level-aware Design + Plan composer used by `/agn:define`, `/agn:design`, `/agn:plan`. Read-only tools (no Write/Edit/Bash); returns text for the parent to persist via `taskman.sh`.
+- `qa` — fresh-context validator used by `/agn:validate feature|epic|product`. Full tools (Read/Bash/Write/Edit) so it can run tests, apply in-scope glue fixes, and write reports; the role boundary lives in the system prompt + `rules/qa.md`.
+
+The pattern: sub-agents isolate by context (they don't see the parent conversation), not by tool restriction. Tool restriction is used selectively (Planner) when the role's value depends on not writing — composition rules don't apply to all agents.
 
 ## What this repo does NOT have
 
