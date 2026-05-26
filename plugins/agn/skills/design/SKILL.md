@@ -1,6 +1,6 @@
 ---
 name: design
-description: Focused revision of an existing unit's design at any tier — product, epic, or feature. Invoke with /agn:design <level>. Product produces docs/architecture.md; epic and feature delegate to the Planner sub-agent once the planner_subagent feature ships.
+description: Focused revision of an existing unit's design at any tier — product, epic, or feature. Invoke with /agn:design <level>. Product drafts docs/architecture.md in this session; epic and feature delegate to the Planner sub-agent for in-place refinement.
 argument-hint: product | epic | feature
 ---
 
@@ -64,30 +64,72 @@ If any are missing, stop and tell the user: *Cannot run `/agn:design product` �
 
 ## $0 = epic
 
-**Placeholder pending the `planner_subagent` feature of epic `agentic_sdlc_rework`.**
+### Preconditions
 
-Standalone epic design is not yet implemented. Today, epic-level design is bundled inside `/agn:define epic` (the epic-decomposition dialog also captures design constraints).
+The epic file must exist under `tasks/epics/`. If it does not, stop and direct the user to `/agn:define epic`.
 
-Until the Planner sub-agent ships:
-- For a new epic: run `/agn:define epic` — design considerations are captured there.
-- For an existing epic that needs a design revision: edit the epic file directly under `tasks/epics/`, or open a focused `/agn:define task` for the architectural change.
+### Workflow
 
-After `planner_subagent` ships, this branch will delegate to a level-aware Planner sub-agent that performs focused design revision on an existing epic without re-walking the entire decomposition.
+1. **Locate** — Confirm the epic slug with the user. Read `tasks/epics/YYYYMMDD_<slug>.md` and note the current `## Linked features`.
 
-Stop. Do not proceed.
+2. **Identify the design gap** — Ask the user what needs revision. Typical reasons: scope drifted, a new constraint surfaced, a downstream feature exposed an ambiguity in the epic's acceptance criteria.
+
+3. **Delegate to the Planner.** Invoke via the Agent tool with `subagent_type: planner` and the following brief:
+   - `level=epic`
+   - `mode=refine`
+   - `title=<existing epic file path>`
+   - `initial_scope=<user description of what needs to change>`
+   - `upstream=<paths to relevant docs: vision, spec, requirements, architecture>`
+
+   The Planner returns the changed sections of the `## Body` plus a one-sentence rationale. It does not normally touch the feature list — that's the `/agn:plan epic` flow.
+
+4. **User review** — Show the diff (current sections vs Planner's proposed sections). Iterate until approved.
+
+5. **Persist** — Apply the edits to the epic file in place via the Edit tool. The file's `status` and `slug` do not change; only body sections are touched. Do not create a new unit.
+
+6. **Report** — One-line summary of what changed.
+
+### Discipline
+
+- Refinement is in-place. Do not move the epic between status folders.
+- If the user asks for a fundamental re-decomposition (adding/removing features), redirect to `/agn:plan epic`.
+- If the user describes a contradicting requirement, surface the conflict; do not silently resolve.
+
+Stop.
 
 ---
 
 ## $0 = feature
 
-**Placeholder pending the `planner_subagent` feature of epic `agentic_sdlc_rework`.**
+### Preconditions
 
-Standalone feature design is not yet implemented. Today, feature-level design is bundled inside `/agn:define feature` (the feature-planning dialog captures design constraints).
+The feature file must exist under `tasks/features/`. If it does not, stop and direct the user to `/agn:define feature`.
 
-Until the Planner sub-agent ships:
-- For a new feature: run `/agn:define feature` — design considerations are captured there.
-- For an existing feature that needs a design revision: edit the feature file directly under `tasks/features/`, or update the linked spec under `docs/<area>/.../-spec.md`.
+### Workflow
 
-After `planner_subagent` ships, this branch will delegate to a level-aware Planner sub-agent that performs focused design revision on an existing feature without re-walking the entire planning dialog.
+1. **Locate** — Confirm the feature slug with the user. Read `tasks/features/YYYYMMDD_<slug>.md` and the linked spec under `docs/<area>/.../-spec.md` if any.
 
-Stop. Do not proceed.
+2. **Identify the design gap** — Ask the user what needs revision. Typical reasons: scope drift, an acceptance criterion is ambiguous, a task surfaced a missing constraint, the linked spec is out of date.
+
+3. **Delegate to the Planner.** Invoke via the Agent tool with `subagent_type: planner` and the following brief:
+   - `level=feature`
+   - `mode=refine`
+   - `title=<existing feature file path>`
+   - `initial_scope=<user description of what needs to change>`
+   - `upstream=<paths to: parent epic file if any, docs/vision.md, docs/spec.md, docs/architecture.md, linked spec>`
+
+   The Planner returns the changed sections of the `## Body` (and optionally the linked spec content) plus a one-sentence rationale. It does not normally touch the task list — that's the `/agn:plan feature` flow.
+
+4. **User review** — Show the diff. Iterate until approved.
+
+5. **Persist** — Apply the edits to the feature file (and linked spec, if proposed) in place via the Edit tool. The file's `status` and `slug` do not change.
+
+6. **Report** — One-line summary of what changed.
+
+### Discipline
+
+- Refinement is in-place. Do not move the feature between status folders.
+- If the user asks for a fundamental re-decomposition (adding/removing tasks), redirect to `/agn:plan feature`.
+- If the user describes a contradicting requirement, surface the conflict.
+
+Stop.

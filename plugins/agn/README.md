@@ -38,9 +38,9 @@ The plugin ships 8 skills. Lifecycle skills follow the verb-noun pattern `/agn:<
 
 | Verb | Skill | What it does |
 |------|-------|--------------|
-| Define | `/agn:define <product\|epic\|feature\|task>` | Define a work unit at the named tier — vision/spec/requirements (product), epic + linked features (epic), feature + linked tasks (feature), task/bug ticket (task) |
-| Design | `/agn:design <product\|epic\|feature>` | Focused revision of an existing unit's design; product produces `docs/architecture.md`. Epic and feature are placeholders pending the Planner sub-agent. |
-| Plan | `/agn:plan <epic\|feature>` | Focused revision of an existing unit's decomposition. Placeholder pending the Planner sub-agent. |
+| Define | `/agn:define <product\|epic\|feature\|task>` | Define a work unit at the named tier — vision/spec/requirements (product), epic + linked features (epic), feature + linked tasks (feature), task/bug ticket (task). Delegates composition to the Planner sub-agent for epic/feature/task levels. |
+| Design | `/agn:design <product\|epic\|feature>` | Focused revision of an existing unit's design; product produces `docs/architecture.md`. Epic and feature delegate to the Planner sub-agent for in-place body refinement. |
+| Plan | `/agn:plan <epic\|feature>` | Focused revision of an existing unit's decomposition (epic into features, feature into tasks). Delegates to the Planner sub-agent in refine + plan-only mode. |
 | Implement | `/agn:implement <task\|feature\|epic>` | Execute implementation; task = detailed design → code → tests; feature/epic = iterate children with review gates |
 | Validate | `/agn:validate <task\|feature\|epic\|product>` | Quality gates: feature = integration test; product = full system test. Task and epic are placeholders pending the QA sub-agent. |
 
@@ -132,6 +132,7 @@ Persistence rules (storage layout, naming, lifecycle preconditions, CLI surface,
 plugins/agn/
 ├── .claude-plugin/plugin.json    # plugin manifest
 ├── skills/                       # 8 /agn:* skills
+├── agents/                       # planner (level-aware Design + Plan sub-agent)
 ├── rules/                        # first-principles, task-composition, writing-guideline, qa, doc-maintenance
 ├── scripts/taskman.sh            # task lifecycle CLI (also: persistence reference via `help`)
 └── README.md

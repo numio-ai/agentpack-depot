@@ -24,6 +24,27 @@ If `$0` is not one of `product`, `epic`, `feature`, `task`, stop and list the va
 
 Read `$0`. Run exactly one of the four workflows below.
 
+## Composition via the Planner sub-agent
+
+For `epic`, `feature`, and `task` levels, composition of the unit body (and decomposition into child units, where applicable) is delegated to the Planner sub-agent (`plugins/agn/agents/planner.md`). This skill stays focused on user dialog, slug confirmation, and `taskman.sh` persistence.
+
+The `product` branch does **not** invoke the Planner — vision/spec/requirements drafting is pre-Design and stays in the parent session. Product-level Design (architecture) lives in `/agn:design product`; the epic list comes from `/agn:define epic` calls afterward.
+
+When a workflow below says "delegate to the Planner", invoke it via the Agent tool with `subagent_type: planner` and a brief containing:
+
+- `level` — `epic` | `feature` | `task`
+- `mode` — `new`
+- `title` — the human-readable title
+- `initial_scope` — what the user said in the dialog so far (problem, objective, scope, acceptance criteria, any decomposition discussed)
+- `upstream` — paths to relevant docs (`docs/vision.md`, `docs/spec.md`, `docs/requirements.md`, `docs/architecture.md`; parent epic or feature file)
+
+The Planner returns:
+- `## Body` — full markdown body for the unit, matching the required sections from `rules/task-composition.md`.
+- `## Decomposition` — ordered child list (empty for `task`).
+- Optional `## Questions for parent` — surface to the user, gather answers, re-invoke the Planner with the updated brief.
+
+Pipe the returned Body to `./scripts/taskman.sh new <level> --slug … --title …`. For each Decomposition entry, invoke `./scripts/taskman.sh new` for that child after composing its own body (which may delegate to the Planner one more level down).
+
 ---
 
 ## $0 = product
@@ -42,6 +63,8 @@ Read `$0`. Run exactly one of the four workflows below.
 The `docs/spec.md` and `docs/requirements.md` produced here are **product-level** documents — they describe the product as a whole. Feature-scoped specs follow a different convention and live under `docs/<area>/.../-spec.md`.
 
 ### Workflow
+
+This branch does not invoke the Planner sub-agent — drafting of `docs/vision.md`, `docs/spec.md`, and `docs/requirements.md` happens in this parent session. The Planner takes over at `/agn:design product` (architecture) and `/agn:define epic` (epic decomposition).
 
 1. **Vision** — Interview the user (problem, users, capabilities). Draft a one-page `docs/vision.md`. Iterate until the user is satisfied with the direction.
 
@@ -119,17 +142,14 @@ List the features in order, each with:
 
 Keep features small enough that each is itself a coherent slice with its own tasks. Resist the temptation to design the implementation here.
 
-#### 5. Compose the epic body
+#### 5. Delegate body composition to the Planner
 
-Required sections:
+Hand the dialog outputs (problem, objective, scope, acceptance criteria, feature breakdown from step 4) to the Planner per the **Composition via the Planner sub-agent** section above, with `level=epic`. The Planner returns:
 
-- `## Problem statement`
-- `## Objective`
-- `## Scope`
-- `## Acceptance criteria`
-- `## Linked features` — ordered list of feature titles or slugs that compose this epic
+- `## Body` — the epic body matching the required sections (`## Problem statement`, `## Objective`, `## Scope`, `## Acceptance criteria`, `## Linked features`).
+- `## Decomposition` — ordered feature list that should mirror your step-4 list. Reconcile any divergence with the user before persisting.
 
-Do not add `## Requirements` to the epic file — those live in feature specs or `docs/<area>/.../-spec.md`. Do not add `## Risks and mitigations` unless each risk has a named owner and active mitigation. Do not add `## Success metrics` — fold testable measures into `## Acceptance criteria`.
+The Planner enforces the body shape (including what NOT to include — `Requirements`, freeform `Risks and mitigations`, `Success metrics`); you do not need to restate section requirements here.
 
 #### 6. Write drafts and preview
 
@@ -244,25 +264,13 @@ List the tasks in order, each with:
 
 Keep tasks small enough that each is executable in a single focused session. Resist the temptation to design the implementation here — the task file states WHAT, not HOW.
 
-#### 6. Compose bodies
+#### 6. Delegate body composition to the Planner
 
-For the feature file, compose:
+For the **feature file**: hand the dialog outputs (problem, objective, scope, acceptance criteria, task breakdown from step 5) to the Planner per the **Composition via the Planner sub-agent** section above, with `level=feature`. The Planner returns a feature `## Body` and a `## Decomposition` (the task list).
 
-- `## Problem statement`
-- `## Objective`
-- `## Acceptance criteria`
-- Recommended: `## Scope`, `## Tasks` (ordered), `## Linked spec`
+For each task in the decomposition: invoke the Planner again with `level=task`, `mode=new`, `title=<task title>`, `initial_scope=<task one-line summary + parent feature context>`. The Planner returns a task body matching the required sections.
 
-Do not add `## Requirements` to the feature file — those live in the linked spec. Do not add `## Risks and mitigations` unless each risk has a named owner and active mitigation. Do not add `## Success metrics` — fold testable measures into `## Acceptance criteria`.
-
-For each task, compose:
-
-- `## Problem statement`
-- `## Scope`
-- `## Acceptance criteria`
-- `## Quality gates`
-
-These section names are required — `taskman.sh` validates them on creation.
+`taskman.sh` validates the section names (`## Problem statement`, `## Scope`, `## Acceptance criteria`, `## Quality gates` for tasks; `## Problem statement`, `## Objective`, `## Acceptance criteria` for features) on creation; the Planner enforces them in the body it returns.
 
 #### 7. Write drafts and preview
 
@@ -398,15 +406,11 @@ Do not choose implementation approach here.
 - Quality gates — the exact commands and/or manual steps that must pass.
 - Rollback plan — how to revert safely (when relevant).
 
-#### 6. Compose the body
+#### 6. Delegate body composition to the Planner
 
-Required sections (validated by `taskman.sh`):
-- `## Problem statement`
-- `## Scope`
-- `## Acceptance criteria`
-- `## Quality gates`
+Hand the dialog outputs (problem, scope, acceptance criteria, quality gates, optional constraints/assumptions, optional risks/rollback) to the Planner per the **Composition via the Planner sub-agent** section above, with `level=task`, `mode=new`. The Planner returns a `## Body` matching the required sections (`## Problem statement`, `## Scope`, `## Acceptance criteria`, `## Quality gates`) and an empty `## Decomposition`.
 
-Recommended: `## Constraints and assumptions`, `## Risks and rollback`.
+`taskman.sh` validates the section names on creation; the Planner enforces them.
 
 #### 7. Write the draft and preview
 
@@ -460,13 +464,16 @@ Environment, version, logs, screenshots, links.
 
 Bugs can be attached to a feature (post-merge follow-up) or left ad-hoc. Ask.
 
-#### 6. Compose the body
+#### 6. Delegate body composition to the Planner
 
-Same required sections as a task — `## Problem statement`, `## Scope`, `## Acceptance criteria`, `## Quality gates`. Fill each with bug-appropriate content:
-- Problem statement: observed vs expected.
-- Scope: what is and is not included in the fix.
-- Acceptance criteria: the reproduction no longer reproduces; regression test added.
-- Quality gates: the exact validation commands.
+Hand the dialog outputs (observed problem, expected vs actual, reproduction steps, context, feature attachment if any) to the Planner per the **Composition via the Planner sub-agent** section above, with `level=task`, `mode=new`. Note `kind=bug` in the `initial_scope` so the Planner shapes bug-appropriate content:
+
+- `## Problem statement` — observed vs expected.
+- `## Scope` — what is and is not in the fix.
+- `## Acceptance criteria` — reproduction no longer reproduces; regression test added.
+- `## Quality gates` — exact validation commands.
+
+Run `taskman.sh new task --kind bug` to persist (the `--kind` flag belongs on the taskman call, not in the Planner brief).
 
 #### 7. Write the draft, preview, finalize
 

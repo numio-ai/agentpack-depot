@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture rework in flight
 
-Epic `agentic_sdlc_rework` (see `tasks/epics/`) is partly delivered. Two features have shipped: `unified_skills_and_cleanup` (the verb-noun skill surface `/agn:define|design|plan|implement|validate <level>` is live) and `rules_split_and_new_files` (composition rules in `rules/task-composition.md`; persistence in `taskman.sh help`; new role-specific rule files `rules/qa.md` and `rules/doc-maintenance.md`). Four features remain in flight: `planner_subagent` (level-aware Planner for Design + Plan), `task_escalation_protocol` (halt-and-route for upstream design gaps), `qa_subagent_and_validation` (QA sub-agent for feature/epic/product), and `docsync_close_hook` (PostClose hook + `/agn:docs-sync`). Until those ship, the Planner and QA sub-agents are placeholders inside the unified skills, and doc sync remains manual.
+Epic `agentic_sdlc_rework` (see `tasks/epics/`) is partly delivered. Three features have shipped: `unified_skills_and_cleanup` (the verb-noun skill surface `/agn:define|design|plan|implement|validate <level>` is live), `rules_split_and_new_files` (composition rules in `rules/task-composition.md`; persistence in `taskman.sh help`; new role-specific rule files `rules/qa.md` and `rules/doc-maintenance.md`), and `planner_subagent` (Planner sub-agent at `plugins/agn/agents/planner.md`; `/agn:define`, `/agn:design`, and `/agn:plan` delegate composition to it). Three features remain in flight: `task_escalation_protocol` (halt-and-route for upstream design gaps), `qa_subagent_and_validation` (QA sub-agent for feature/epic/product), and `docsync_close_hook` (PostClose hook + `/agn:docs-sync`). Until those ship, the QA sub-agent is a placeholder inside `/agn:validate task|epic`, and doc sync remains manual.
 
 ## What this repo is
 
@@ -86,6 +86,10 @@ See `plugins/agn/rules/task-composition.md` for frontmatter shapes, body section
 ## Editing skills
 
 A skill lives at `plugins/agn/skills/<name>/SKILL.md`. The frontmatter `name:` field becomes the `/agn:<name>` invocation. The body is the prompt that runs when the skill is invoked. Skills should never write task files directly — they call `taskman.sh` for any persistence.
+
+## Editing agents
+
+Sub-agents live at `plugins/agn/agents/<name>.md`. The frontmatter `name:` field becomes the `subagent_type` used when a skill invokes them via the Agent tool. Today only one agent ships: `planner` (level-aware Design + Plan composer used by `/agn:define`, `/agn:design`, `/agn:plan`). Sub-agents have restricted toolsets — the Planner has no Write/Edit/Bash; it returns text, and the parent skill persists via `taskman.sh`.
 
 ## What this repo does NOT have
 
