@@ -38,7 +38,6 @@ The plugin ships 14 skills, namespaced as `/agn:<scope>-<action>`. Skills group 
 
 | Scope | Skill | What it does |
 |-------|-------|--------------|
-| Init | `/agn:session-load` | Load behavioral rules into session context (manual fallback if the agent is unavailable) |
 | Product | `/agn:product-define` | Vision, spec, requirements in `docs/` |
 | Product | `/agn:product-design` | `docs/architecture.md` |
 | Epic | `/agn:epic-create` | Epic file + linked feature files |
@@ -108,14 +107,25 @@ tasks/
 
 Created incrementally as you run each stage — no upfront scaffolding.
 
-## How rules are loaded
+## Loading rules into your project
 
-| Mechanism | How | Survives compaction | When to use |
-|-----------|-----|---------------------|-------------|
-| `agn` agent (default) | Automatic via `settings.json` | Yes | Recommended for most users |
-| `/agn:session-load` | Manual, run once per session | No | When agent conflicts with another plugin |
+Plugins do not auto-load `rules/`. To activate the behavioral rules in your project, append this block to your project's `CLAUDE.md`:
 
-Rules live in `rules/first-principles.md`, `rules/task-management.md`, and `rules/writing-guideline.md`. The agent inlines them in its system prompt; `/agn:session-load` injects them via `!cat`.
+```
+@~/.claude/plugins/cache/agenture/agn/0.1.0/rules/first-principles.md
+@~/.claude/plugins/cache/agenture/agn/0.1.0/rules/task-management.md
+@~/.claude/plugins/cache/agenture/agn/0.1.0/rules/writing-guideline.md
+```
+
+Update the version (`0.1.0`) when you upgrade the plugin.
+
+The three files:
+
+- `first-principles.md` — design discipline (YAGNI, KISS, DRY), surgical changes, goal-driven execution.
+- `task-management.md` — epic/feature/task hierarchy, lifecycle, frontmatter shapes.
+- `writing-guideline.md` — crisp, no-fluff prose style.
+
+Interim mechanism. A planned change will load each rule only when a relevant skill runs (tracked in backlog: `split_task_management_rules`).
 
 ## Plugin layout
 

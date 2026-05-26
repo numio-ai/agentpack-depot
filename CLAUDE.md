@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Foundational rules to always follow
+
+@.claude/rules/first-principles.md
+
 ## What this repo is
 
 A Claude Code **plugin marketplace** (`agenture`) that ships one plugin today: `agn` — an agentic SDLC loop. There is no application code, no build, and no test framework. The deliverables are:
